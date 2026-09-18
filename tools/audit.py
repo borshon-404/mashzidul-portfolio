@@ -3,7 +3,7 @@
 import os, re, sys, glob
 from html.parser import HTMLParser
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'site')
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
 class P(HTMLParser):
     VOID = {'meta','link','img','br','hr','input','source','path','circle','rect','line','ellipse','use','stop'}
@@ -36,7 +36,10 @@ for f in files:
             if not v or v.startswith(('http','#','mailto:','tel:')): continue
             target=v.split('#')[0].split('?')[0]
             if not target: continue
-            fp=os.path.join(ROOT,target.lstrip('/'))
+            if target.startswith('/'):
+                fp=os.path.join(ROOT,target.lstrip('/'))
+            else:
+                fp=os.path.normpath(os.path.join(os.path.dirname(f),target))
             if not (os.path.isfile(fp) or os.path.isfile(os.path.join(fp,'index.html'))):
                 problems.append(f'{rel}: MISSING {v}')
     h1=len(re.findall(r'<h1[\s>]',src))

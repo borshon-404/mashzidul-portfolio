@@ -9,7 +9,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, 'site');
+const ROOT = __dirname; // repo root = web root
 const PORT = process.env.PORT || 8080;
 
 const TYPES = {

@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 """MTB Portfolio — static site builder. Components + pages from content.json."""
-import json, os, shutil, html
+import json, os, re, shutil, html
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(ROOT, '..', 'site')
+OUT = os.path.normpath(os.path.join(ROOT, '..'))  # repo root = web root (GitHub Pages branch-root ready)
 C = json.load(open(os.path.join(ROOT, 'content.json')))
 S = C['site']
 DOMAIN = S['domain']
 
 def e(s): return html.escape(str(s), quote=True)
+
+def relativize(htmlstr, path, depth_override=None):
+    """Rewrite root-absolute href/src to page-relative URLs so the site works
+    at any base path (domain root, /mashzidul-portfolio/, local folder…)."""
+    seg = [s for s in path.split('/') if s]
+    depth = depth_override if depth_override is not None else (
+        len(seg) if path.endswith('/') else max(len(seg) - 1, 0))
+    prefix = '../' * depth if depth else './'
+    return re.sub(r'(href|src)="/', lambda m: f'{m.group(1)}="{prefix}', htmlstr)
 
 # ---------------------------------------------------------------- icons
 ICONS = {
@@ -181,12 +190,12 @@ def faq_item(f, i):
 </div>'''
 
 # ---------------------------------------------------------------- page shell
-def page(path, title, desc, body, active, ld=None, og_type='website'):
+def page(path, title, desc, body, active, ld=None, og_type='website', depth=None):
     url = DOMAIN + ('/' if path == '/' else path)
     ld_json = ''
     if ld:
         ld_json = '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False) + '</script>'
-    return f'''<!doctype html>
+    doc = f'''<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -225,6 +234,7 @@ def page(path, title, desc, body, active, ld=None, og_type='website'):
 <script src="/assets/js/main.js" defer></script>
 </body>
 </html>'''
+    return relativize(doc, path, depth)
 
 def person_ld():
     return {
@@ -806,7 +816,7 @@ def notfound():
     </div>
   </div>
 </section>'''
-    return page('/404/', f"Page Not Found | {S['name']}", "The page you were looking for could not be found.", body, '')
+    return page('/404/', f"Page Not Found | {S['name']}", "The page you were looking for could not be found.", body, '', depth=0)
 
 # ---------------------------------------------------------------- build
 PAGES = []

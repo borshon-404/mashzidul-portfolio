@@ -30,22 +30,26 @@ The site is fully static — `site/` can also be dropped onto any static host
 
 ## Project structure
 
+The **repository root IS the web root** (built pages live next to the source folders),
+so GitHub Pages "Deploy from a branch → / (root)" works with zero extra config.
+All internal URLs are **page-relative**, so the same build runs at a domain root
+(`https://mashzidultanun.com/`), a project sub-path (`https://user.github.io/mashzidul-portfolio/`)
+or any local folder — no rebuild needed when the base path changes.
+
 ```
 mashzidul-portfolio/
-├── site/                  # BUILT WEBSITE (deploy this folder) — 24 pages
-│   ├── index.html         #   Home
-│   ├── about/ services/ projects/ (+4 case studies) pricing/
-│   ├── blog/ (+8 article pages) contact/ faq/ terms/ privacy/ booking/
-│   ├── 404.html
-│   ├── sitemap.xml  robots.txt
-│   └── assets/
-│       ├── css/           # fonts.css (self-hosted @font-face) + styles.css (design system)
-│       ├── js/            # main.js — nav, reveal, counters, accordion, filters, forms
-│       ├── fonts/         # Sora 600/700 + Rubik 400/500 (woff2, latin, self-hosted)
-│       └── img/
-│           ├── brand/     # official logo derivatives (webp), favicon, apple-touch, OG image
-│           ├── portrait/  # official photo derivatives (webp + png masters)
-│           └── projects/  # branded project artwork (svg)
+├── index.html             # BUILT WEBSITE (web root) — Home
+├── about/ services/ projects/ (+4 case studies) pricing/
+├── blog/ (+8 article pages) contact/ faq/ terms/ privacy/ booking/
+├── 404.html  sitemap.xml  robots.txt
+├── assets/
+│   ├── css/               # fonts.css (self-hosted @font-face) + styles.css (design system)
+│   ├── js/                # main.js — nav, reveal, counters, accordion, filters, forms
+│   ├── fonts/             # Sora 600/700 + Rubik 400/500 (woff2, latin, self-hosted)
+│   └── img/
+│       ├── brand/         # official logo derivatives (webp), favicon, apple-touch, OG image
+│       ├── portrait/      # official photo derivatives (webp + png masters)
+│       └── projects/      # branded project artwork (svg)
 ├── site_src/              # SOURCE
 │   ├── build.py           # static site generator (components + pages)
 │   ├── content.json       # SINGLE SOURCE OF TRUTH for every string on the site
@@ -80,6 +84,16 @@ at the same names if masters change). **Do not redesign, recolor or recreate the
 - Forms: client validation + functional mailto handoff; `FORM_ENDPOINT` constant in
   `site/assets/js/main.js` is the single plug-in point for a real backend (Formspree, cPanel, API)
 - Booking page prepared for a calendar integration (Google Calendar / Calendly) without design changes
+
+## Deploy — GitHub Pages
+
+1. Repository → **Settings → Pages**.
+2. *Build and deployment → Source:* **Deploy from a branch**.
+3. *Branch:* `main` · *Folder:* **/ (root)** → Save.
+4. Wait 1–2 min → live at `https://<username>.github.io/<repo>/`.
+
+No build step runs on GitHub — the committed root already contains the built site.
+Custom domain later? Point the domain at the same root; relative URLs keep working.
 
 ## Content integrity rules (binding)
 
