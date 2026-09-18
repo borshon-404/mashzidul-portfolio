@@ -1,0 +1,199 @@
+{
+  "site": {
+    "name": "Mashzidul Tanun Borshon",
+    "title": "Web Designer & Full Stack Web Developer",
+    "domain": "https://mashzidultanun.com",
+    "email": "mail@mashzidultanun.com",
+    "phone": "+8801330132141",
+    "phoneHref": "+8801330132141",
+    "address": "009-900, Azizul Haque Sorok, Deana Moddhopara, Daulatpur, Khulna",
+    "location": "Khulna, Bangladesh",
+    "metaDescription": "Mashzidul Tanun Borshon is a web designer and full stack web developer in Khulna, Bangladesh. He builds modern, responsive, fast and SEO-optimized websites for businesses.",
+    "socials": [
+      {"platform": "Facebook", "label": "Mashzidul Tanun Borshon", "url": null},
+      {"platform": "Instagram", "label": "Mashzidul Tanun Borshon", "url": null},
+      {"platform": "LinkedIn", "label": "Mashzidul Tanun Borshon", "url": null},
+      {"platform": "Fiverr", "label": "", "url": null},
+      {"platform": "Upwork", "label": "", "url": null},
+      {"platform": "Freelancer", "label": "", "url": null}
+    ]
+  },
+  "hero": {
+    "greeting": "Hi, I'm",
+    "name": "Mashzidul Tanun Borshon",
+    "role": "Web Designer & Full Stack Web Developer",
+    "intro": "I build modern, responsive websites that help businesses grow online. Whether you need a business website, an online store, or a custom web application, I focus on creating websites that are fast, user-friendly, and designed to deliver results.",
+    "ctaPrimary": "Let's Build Something Great Together",
+    "ctaSecondary": "View My Work"
+  },
+  "whyChooseMe": [
+    {"title": "Responsive & Mobile-Friendly", "icon": "devices"},
+    {"title": "Fast & SEO Optimized", "icon": "bolt"},
+    {"title": "Clean, Secure Code", "icon": "shield"},
+    {"title": "Modern UI/UX Design", "icon": "layers"},
+    {"title": "Reliable Support", "icon": "support"}
+  ],
+  "about": {
+    "paragraphs": [
+      "I'm Mashzidul Tanun Borshon, a Web Designer and Full Stack Web Developer based in Bangladesh. I enjoy turning ideas into websites that are both visually appealing and easy to use.",
+      "I work with modern web technologies to build websites that look great on every device and perform smoothly. My goal is to create solutions that not only meet your expectations but also help your business succeed online."
+    ],
+    "info": [
+      {"label": "Birthday", "value": "22-09-2007"},
+      {"label": "Nationality", "value": "Bangladeshi"},
+      {"label": "Study", "value": "Govt. Brajalal College"},
+      {"label": "Degree", "value": "BSC in statistics"},
+      {"label": "Email", "value": "mail@mashzidultanun.com"},
+      {"label": "Phone", "value": "+8801330132141"},
+      {"label": "Address", "value": "009-900, Azizul Haque Sorok, Deana Moddhopara, Daulatpur, Khulna"}
+    ]
+  },
+  "skillGroups": [
+    {"group": "Frontend", "skills": ["HTML", "CSS", "JavaScript", "React"]},
+    {"group": "Backend", "skills": ["Node.js", "Express.js", "MongoDB"]},
+    {"group": "CMS", "skills": ["WordPress", "Elementor"]},
+    {"group": "Frameworks & Styling", "skills": ["Bootstrap", "Tailwind CSS"]},
+    {"group": "Other", "skills": ["SEO", "Git", "GitHub"]}
+  ],
+  "services": [
+    {"slug": "custom-website-design", "title": "Custom Website Design", "desc": "A website designed from scratch around your business, your brand and your goals — modern, user-friendly and built to deliver results."},
+    {"slug": "full-stack-web-development", "title": "Full Stack Web Development", "desc": "Custom web applications developed end to end, from responsive frontend interfaces to secure server-side logic and databases."},
+    {"slug": "wordpress-website-development", "title": "WordPress Website Development", "desc": "Professional WordPress websites, including Elementor-built business sites that stay easy for you to manage after launch."},
+    {"slug": "ecommerce-website-development", "title": "eCommerce Website Development", "desc": "Online stores built to showcase your products clearly and guide customers smoothly from browsing to checkout."},
+    {"slug": "landing-page-design", "title": "Landing Page Design", "desc": "Focused, fast-loading landing pages designed around a single goal — turning your visitors into enquiries and customers."},
+    {"slug": "website-redesign", "title": "Website Redesign", "desc": "A modern refresh of your current website with improved design, performance and user experience, while preserving your existing content where needed."},
+    {"slug": "website-maintenance", "title": "Website Maintenance", "desc": "Ongoing updates, monitoring and assistance to keep your website secure, current and running smoothly after launch."},
+    {"slug": "website-speed-optimization", "title": "Website Speed Optimization", "desc": "Performance work that makes your website load faster and feel smoother on every device — for users and for search engines."},
+    {"slug": "seo-optimization", "title": "SEO Optimization", "desc": "SEO-friendly structure, clean code and on-page optimization that help your website become easier to find online."},
+    {"slug": "website-bug-fixes", "title": "Website Bug Fixes", "desc": "Diagnosing and fixing layout breaks, errors and broken functionality so your website works exactly as it should."}
+  ],
+  "stats": [
+    {"value": 4, "suffix": "", "label": "Featured Projects", "note": "case studies published here"},
+    {"value": 10, "suffix": "", "label": "Services Offered", "note": "design, development & care"},
+    {"value": 13, "suffix": "", "label": "Technologies", "note": "across frontend, backend & CMS"},
+    {"value": 3, "suffix": "", "label": "Pricing Packages", "note": "from one-pagers to full solutions"}
+  ],
+  "projects": [
+    {
+      "slug": "seo-agency-website",
+      "title": "SEO Agency Website",
+      "category": "Business Website",
+      "duration": "10 Days",
+      "cost": "$150-$200",
+      "role": "UI/UX Design, Frontend Development, Responsive Design",
+      "technologies": ["HTML", "CSS", "JavaScript", "Bootstrap"],
+      "overview": "A modern website designed for a digital marketing and SEO agency. The project focuses on building trust through a clean layout, service highlights, team profiles, testimonials, pricing plans, and strong call-to-action sections. The website is fully responsive and optimized for performance and user experience.",
+      "features": ["Responsive Design", "Service Pages", "Team Section", "Testimonials", "Pricing Plans", "Contact Form", "SEO-Friendly Structure", "Performance Optimization"],
+      "liveUrl": null,
+      "art": "seo-agency-website.svg"
+    },
+    {
+      "slug": "web-hosting-company-website",
+      "title": "Web Hosting Company Website",
+      "category": "Corporate Website",
+      "duration": "8 Days",
+      "cost": "$250-$300",
+      "role": "Website Design and Development",
+      "technologies": ["WordPress", "Elementor", "HTML", "CSS"],
+      "overview": "A professional corporate website built for a web hosting company to showcase hosting solutions, product features, pricing plans, and customer support. The layout is clean, modern, and designed to improve conversions.",
+      "features": ["Hosting Plans", "Product Showcase", "FAQ Section", "Call-to-Action Buttons", "Mobile Responsive", "Speed Optimization"],
+      "liveUrl": null,
+      "art": "web-hosting-company-website.svg"
+    },
+    {
+      "slug": "creative-agency-portfolio",
+      "title": "Creative Agency Portfolio",
+      "category": "Portfolio Website",
+      "duration": "7 Days",
+      "cost": "$200-$250",
+      "role": "UI Design and Frontend Development",
+      "technologies": ["HTML", "CSS", "JavaScript"],
+      "overview": "A modern portfolio website designed for a creative agency with bold typography, a dark theme, and interactive layouts. The design emphasizes creativity while maintaining excellent usability across all devices.",
+      "features": ["Modern Dark Theme", "Portfolio Gallery", "Smooth Animations", "Responsive Layout", "Minimal Design", "Contact Section"],
+      "liveUrl": null,
+      "art": "creative-agency-portfolio.svg"
+    },
+    {
+      "slug": "digital-creative-studio",
+      "title": "Digital Creative Studio",
+      "category": "Agency Website",
+      "duration": "9 Days",
+      "cost": "$250-$300",
+      "role": "Website Design and Frontend Development",
+      "technologies": ["React", "Tailwind CSS", "JavaScript"],
+      "overview": "A sleek agency website designed to showcase branding, digital services, and creative projects. The website delivers a professional user experience with modern layouts and optimized performance.",
+      "features": ["Modern UI", "Service Showcase", "Portfolio Section", "Contact Form", "Fully Responsive", "Fast Performance", "SEO Optimized"],
+      "liveUrl": null,
+      "art": "digital-creative-studio.svg"
+    }
+  ],
+  "portfolioIntro": "Here are some of the projects I've worked on, including business websites, portfolios, landing pages, WordPress websites, and online stores. Every project is built with attention to design, performance, and user experience.",
+  "pricing": [
+    {
+      "name": "Basic",
+      "tagline": "Perfect for small businesses",
+      "features": ["One Page Website", "Responsive Design", "Contact Form", "Basic SEO", "Delivery within 3 Days", "7 Days Support"],
+      "price": "Starting From $5",
+      "featured": false
+    },
+    {
+      "name": "Standard",
+      "tagline": "Perfect for growing businesses",
+      "features": ["Up to 5 Pages", "Responsive Design", "Contact Form", "Speed Optimization", "Basic SEO", "CMS Integration", "Delivery within 5 Days", "14 Days Support"],
+      "price": "Starting From $150",
+      "featured": true
+    },
+    {
+      "name": "Premium",
+      "tagline": "Complete Business Solution",
+      "features": ["Custom Website", "Unlimited Pages", "eCommerce", "Advanced SEO", "Speed Optimization", "Security Setup", "Premium Design", "Training", "30 Days Support"],
+      "price": "Starting From $250",
+      "featured": false
+    }
+  ],
+  "blog": [
+    {"slug": "why-every-business-needs-a-professional-website", "title": "Why Every Business Needs a Professional Website", "category": "Business"},
+    {"slug": "top-web-design-trends", "title": "Top Web Design Trends", "category": "Web Design"},
+    {"slug": "how-website-speed-affects-seo", "title": "How Website Speed Affects SEO", "category": "SEO & Performance"},
+    {"slug": "wordpress-vs-custom-development", "title": "WordPress vs Custom Development", "category": "Development"},
+    {"slug": "beginners-guide-to-responsive-web-design", "title": "Beginner's Guide to Responsive Web Design", "category": "Web Design"},
+    {"slug": "essential-website-security-tips", "title": "Essential Website Security Tips", "category": "Security"},
+    {"slug": "choosing-the-right-hosting-provider", "title": "Choosing the Right Hosting Provider", "category": "Hosting"},
+    {"slug": "how-good-ux-increases-conversions", "title": "How Good UX Increases Conversions", "category": "UX"}
+  ],
+  "faq": [
+    {"q": "What services do you offer?", "a": "I design and develop responsive websites, WordPress websites, landing pages, eCommerce stores, and custom web applications. I also provide website maintenance, bug fixes, and performance optimization."},
+    {"q": "How long does a typical project take?", "a": "The timeline depends on the project's size and complexity. Most business websites are completed within 1 to 3 weeks."},
+    {"q": "Do you build mobile-friendly websites?", "a": "Yes. Every website I create is fully responsive and optimized to work smoothly on desktops, tablets, and smartphones."},
+    {"q": "Can you redesign my existing website?", "a": "Absolutely. I can refresh your current website with a modern design, improved performance, and better user experience while preserving your existing content if needed."},
+    {"q": "Do you provide support after the project is completed?", "a": "Yes. I offer post-launch support, maintenance, updates, and assistance based on the selected package or ongoing maintenance plan."},
+    {"q": "How do we get started?", "a": "Simply contact me through the contact form or book a consultation. We'll discuss your goals, requirements, timeline, and budget before starting the project."}
+  ],
+  "contact": {
+    "heading": "Let's Work Together",
+    "intro": "Have a project in mind? I'd love to hear about it. Fill out the contact form or schedule a free consultation to discuss your project.",
+    "profession": "Web Designer & Developer"
+  },
+  "terms": [
+    "Project work begins after payment confirmation.",
+    "Clients must provide all required content before development starts.",
+    "Revision limits depend on the selected package.",
+    "Final files are delivered upon full payment.",
+    "Unauthorized copying or redistribution of website content is prohibited.",
+    "Delivery timelines may vary depending on project complexity and client feedback.",
+    "I reserve the right to decline projects that violate applicable laws or ethical standards."
+  ],
+  "privacy": {
+    "intro": "Your privacy is important.",
+    "collected": ["Name", "Email Address", "Phone Number", "Project Details"],
+    "usedFor": ["Respond to inquiries", "Provide project quotations", "Deliver requested services", "Improve customer support"],
+    "closing": "Your personal information will never be sold or shared with third parties except where required by law or necessary to deliver requested services.",
+    "consent": "By using this website, you consent to this Privacy Policy."
+  },
+  "booking": {
+    "heading": "Schedule a Consultation",
+    "intro": "Ready to start your project? Book a free consultation to discuss your goals, requirements, timeline, and budget.",
+    "agenda": ["Project Requirements", "Website Features", "Design Preferences", "Timeline", "Budget", "Questions & Answers"],
+    "cta": "Book Now"
+  }
+}

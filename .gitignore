@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Logs & OS cruft
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc

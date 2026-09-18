@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="Project artwork: Digital Creative Studio">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8E7B4"/><stop offset=".35" stop-color="#F3CC6C"/><stop offset=".65" stop-color="#ECBD61"/><stop offset="1" stop-color="#A76B20"/></linearGradient></defs>
+<rect width="1200" height="900" fill="#0C0B09"/>
+<text x="60" y="820" font-family="Georgia,serif" font-size="560" font-weight="700" fill="url(#g)" opacity=".07">04</text>
+<g fill="none" stroke="url(#g)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+<path d="M480 330 L340 470 L480 610"/>
+<path d="M720 330 L860 470 L720 610"/>
+<path d="M650 290 L550 650"/>
+</g>
+<g fill="url(#g)" opacity=".55">
+<circle cx="330" cy="250" r="7"/><circle cx="400" cy="250" r="7"/><circle cx="470" cy="250" r="7"/><circle cx="540" cy="250" r="7"/>
+<circle cx="660" cy="690" r="7"/><circle cx="730" cy="690" r="7"/><circle cx="800" cy="690" r="7"/><circle cx="870" cy="690" r="7"/>
+</g>
+<circle cx="600" cy="450" r="330" fill="none" stroke="url(#g)" stroke-width="2" opacity=".25"/>
+</svg>

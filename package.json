@@ -1,0 +1,27 @@
+{
+  "name": "mashzidul-portfolio",
+  "version": "1.0.0",
+  "description": "Personal portfolio website of Mashzidul Tanun Borshon — Web Designer & Full Stack Web Developer. Black + gold premium dark theme, static multi-page build.",
+  "private": true,
+  "scripts": {
+    "build": "python3 site_src/build.py",
+    "start": "node server.js",
+    "dev": "npm run build && npm run start",
+    "audit": "python3 tools/audit.py",
+    "check": "npm run build && npm run audit && node --check server.js && node --check site/assets/js/main.js"
+  },
+  "keywords": [
+    "portfolio",
+    "web-designer",
+    "full-stack-developer",
+    "static-site",
+    "black-gold"
+  ],
+  "author": "Mashzidul Tanun Borshon <mail@mashzidultanun.com>",
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=16"
+  }
+}
