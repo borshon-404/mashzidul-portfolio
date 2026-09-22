@@ -10,12 +10,12 @@
     "location": "Khulna, Bangladesh",
     "metaDescription": "Mashzidul Tanun Borshon is a web designer and full stack web developer in Khulna, Bangladesh. He builds modern, responsive, fast and SEO-optimized websites for businesses.",
     "socials": [
-      {"platform": "Facebook", "label": "Mashzidul Tanun Borshon", "url": null},
-      {"platform": "Instagram", "label": "Mashzidul Tanun Borshon", "url": null},
-      {"platform": "LinkedIn", "label": "Mashzidul Tanun Borshon", "url": null},
-      {"platform": "Fiverr", "label": "", "url": null},
-      {"platform": "Upwork", "label": "", "url": null},
-      {"platform": "Freelancer", "label": "", "url": null}
+      {"platform": "Facebook", "label": "Facebook", "url": "https://www.facebook.com/share/1DnkuC68E1/", "icon": "facebook"},
+      {"platform": "Instagram", "label": "Instagram", "url": "https://www.instagram.com/mashzidul_tanun_borshon", "icon": "instagram"},
+      {"platform": "Threads", "label": "Threads", "url": "https://www.threads.com/@mashzidul_tanun_borshon", "icon": "threads"},
+      {"platform": "X", "label": "X", "url": "https://x.com/borshon_303", "icon": "x"},
+      {"platform": "LinkedIn", "label": "LinkedIn", "url": "https://www.linkedin.com/in/mashzidul-tanun-borshon-787019424", "icon": "linkedin"},
+      {"platform": "GitHub", "label": "GitHub", "url": "https://github.com/borshon-404", "icon": "github"}
     ]
   },
   "hero": {

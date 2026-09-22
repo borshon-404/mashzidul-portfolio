@@ -141,6 +141,51 @@ SVC_ICON = {
 def icon(name, size=22):
     return f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS.get(name,"")}</svg>'
 
+# Brand social icons — filled, currentColor, 24x24 viewBox (single source of truth uses content.json)
+SOCIAL_ICONS = {
+ 'facebook': '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3V2z"/>',
+ 'instagram': '<path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7zm5 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm4.5-2a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>',
+ 'threads': '<path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.59 12c.025 3.086.718 5.496 2.057 7.164 1.43 1.781 3.631 2.695 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.701-.597 1.483-1.665 2.77-3.236 3.215-1.67.474-3.656.204-5.204-.945-.62-.47-1.1-1.1-1.42-1.84-.3-.7-.43-1.46-.4-2.19.03-.73.22-1.47.56-2.13.35-.68.86-1.26 1.5-1.7 1.32-.88 3.15-1.14 4.87-.7.55.15 1.07.38 1.55.68.35-.79.89-1.5 1.58-2.04-1.07-.75-2.44-1.25-3.97-1.44-1.71-.22-3.57.04-5.14.74a6.87 6.87 0 0 0-2.96 2.6 7.23 7.23 0 0 0-1.06 3.8c-.02 1.37.4 2.68 1.18 3.77.79 1.1 1.93 1.92 3.27 2.35 1.3.43 2.76.51 4.16.25 1.65-.3 3.05-1.2 4.03-2.46.61.42 1.08 1.04 1.32 1.77.76 2.22.05 4.86-2.16 6.98-1.86 1.82-4.12 2.74-7.35 2.77z"/>',
+ 'x': '<path d="M18.9 2h3l-5.5 6.3L23 22h-5.2l-4-5.3L9 22H6l6-6.9L5.5 2h5.3l3.7 4.9L18.9 2zm-1 18h1.6L7.4 4H5.6l12.3 16z"/>',
+ 'linkedin': '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2zM4 6a2 2 0 1 1 0 4 2 2 0 0 0 0-4z"/>',
+ 'github': '<path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.54 2.87 8.39 6.84 9.75.5.09.68-.22.68-.48v-1.7c-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.7 0 0 .84-.27 2.75 1.05A9.3 9.3 0 0 1 12 7.15a9.3 9.3 0 0 1 2.5.34c1.91-1.32 2.75-1.05 2.75-1.05.55 1.4.2 2.44.1 2.7.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.94.68 1.9v2.82c0 .27.18.58.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z"/>',
+}
+
+def social_icon(platform_key, size=18):
+    key = (platform_key or '').lower()
+    if key in ('x', 'twitter'):
+        key = 'x'
+    path = SOCIAL_ICONS.get(key, '')
+    if not path:
+        return f'<span aria-hidden="true">{e(platform_key[:1].upper())}</span>'
+    return f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">{path}</svg>'
+
+def render_social_links(variant='footer'):
+    socials = [s for s in S.get('socials', []) if s.get('url')]
+    order = ['Facebook','Instagram','Threads','X','LinkedIn','GitHub']
+    def sort_key(s):
+        try:
+            return order.index(s.get('platform',''))
+        except ValueError:
+            return 99
+    socials = sorted(socials, key=sort_key)
+    links = []
+    for s in socials:
+        platform = s.get('platform','')
+        label = s.get('label') or platform
+        url = s.get('url','')
+        icon_key = s.get('icon') or platform.lower()
+        links.append(
+            f'<a class="social-link social-link--{e(icon_key.lower())}" href="{e(url)}" target="_blank" rel="noopener noreferrer" aria-label="{e(label)}">{social_icon(icon_key, 18)}</a>'
+        )
+    wrapper_class = {
+        'footer': 'social-links social-links--footer',
+        'contact': 'social-links social-links--contact',
+        'about': 'social-links social-links--about',
+    }.get(variant, 'social-links')
+    aria = 'Social profiles' if variant=='footer' else f'{variant} social profiles' if variant!='default' else 'Social profiles'
+    return f'<div class="{wrapper_class}" aria-label="{aria}">{"".join(links)}</div>'
+
 # ---------------------------------------------------------------- Blog Helpers (reusable)
 def format_date_long(date_str: str) -> str:
     try:
@@ -357,12 +402,17 @@ def header(active):
 def footer():
     svc = "".join(f'<li><a href="/services/#{s["slug"]}">{e(s["title"])}</a></li>' for s in C['services'][:5])
     quick = "".join(f'<li><a href="{p}">{t}</a></li>' for _,t,p in NAV)
+    socials_footer = render_social_links('footer')
     return f'''<footer class="footer">
   <div class="container">
     <div class="footer__grid">
       <div class="footer__brand">
         <img src="/assets/img/brand/logo-combination-900.webp" width="900" height="203" alt="Mashzidul Tanun Borshon — Web Designer &amp; Full Stack Developer">
         <p>{e(C['hero']['intro'])}</p>
+        <div class="footer__socials">
+          <h4 style="margin:22px 0 12px">Follow Me</h4>
+          {socials_footer}
+        </div>
       </div>
       <div><h4>Quick Links</h4><ul>{quick}
         <li><a href="/booking/">Book an Appointment</a></li><li><a href="/faq/">FAQ</a></li></ul></div>
@@ -380,6 +430,8 @@ def footer():
     </div>
   </div>
 </footer>'''
+
+
 
 def breadcrumb(items):
     parts = ['<a href="/">Home</a>']
@@ -490,12 +542,15 @@ def page(path, title, desc, body, active, ld=None, og_type='website', depth=None
     return relativize(doc, path, depth)
 
 def person_ld():
+    same_as = [s.get('url') for s in S.get('socials', []) if s.get('url')]
     return {
       "@context":"https://schema.org","@type":"Person","name":S['name'],
       "jobTitle":"Web Designer & Full Stack Web Developer","email":S['email'],"telephone":S['phone'],
       "url":DOMAIN,"image":DOMAIN+"/assets/img/portrait/mtb-portrait-hero-720.webp",
       "address":{"@type":"PostalAddress","addressLocality":"Khulna","addressCountry":"BD"},
-      "knowsAbout":["Web Design","Full Stack Web Development","WordPress","React","Node.js","SEO"]}
+      "knowsAbout":["Web Design","Full Stack Web Development","WordPress","React","Node.js","SEO"],
+      "sameAs": same_as}
+
 
 def bc_ld(items):
     el = [{"@type":"ListItem","position":1,"name":"Home","item":DOMAIN+"/"}]
@@ -647,6 +702,7 @@ def home():
 def about():
     info = "".join(f'<div><dt>{e(i["label"])}</dt><dd>{e(i["value"])}</dd></div>' for i in C['about']['info'])
     skill_cols = "".join(f'<div class="skill-col"><h3>{e(g["group"])}</h3><ul>{"".join(f"<li>{e(s)}</li>" for s in g["skills"])}</ul></div>' for g in C['skillGroups'])
+    socials_about = render_social_links('about')
     body = f'''
 <section class="page-hero">
   <img class="watermark" src="/assets/img/brand/logo-abstract-700.webp" width="700" height="760" alt="" aria-hidden="true">
@@ -670,6 +726,10 @@ def about():
       <div style="display:flex;gap:14px;flex-wrap:wrap">
         <a class="btn btn--primary" href="/contact/">Work With Me</a>
         <a class="btn btn--ghost" href="/projects/">See My Work</a>
+      </div>
+      <div style="margin-top:26px">
+        <span class="eyebrow" style="font-size:11px;margin-bottom:10px;display:block">Follow Me</span>
+        {socials_about}
       </div>
     </div>
   </div>
@@ -697,6 +757,7 @@ def about():
 {cta_band()}'''
     ld = [person_ld(), bc_ld([('About','/about/')])]
     return page('/about/', f"About | {S['name']} — {S['title']}", f"Learn about {S['name']}, a {S['title'].lower()} based in Bangladesh — skills, background and how he works.", body, 'about', ld)
+
 
 def services():
     cards = "".join(f'<article class="svc-card" id="{s["slug"]}" data-reveal><div class="top"><span class="ico">{icon(SVC_ICON[s["slug"]],26)}</span><span class="no">0{i+1}</span></div><h3>{e(s["title"])}</h3><p>{e(s["desc"])}</p><a class="link-gold" href="/contact/">Request this service <span class="arr">{icon("arr",14)}</span></a></article>' for i,s in enumerate(C['services']))
@@ -956,8 +1017,7 @@ def render_blog_post(post: dict, idx: int, route_path: str, canonical_path: str)
 
 # ---------------------------------------------------------------- Contact, FAQ, Legal, Booking, 404 (unchanged)
 def contact():
-    socials = [s for s in S['socials'] if s['label']]
-    soc_html = "".join(f'<b>{e(s["platform"])}</b>: {e(s["label"])}' for s in socials)
+    socials_contact = render_social_links('contact')
     body = f'''
 <section class="page-hero">
   <img class="watermark" src="/assets/img/brand/logo-abstract-700.webp" width="700" height="760" alt="" aria-hidden="true">
@@ -974,7 +1034,11 @@ def contact():
       <div class="c-row"><span class="ico">{icon('mail',20)}</span><div><span class="lbl">E-mail</span><a class="val" href="mailto:{S['email']}">{S['email']}</a></div></div>
       <div class="c-row"><span class="ico">{icon('phone',20)}</span><div><span class="lbl">Phone / WhatsApp</span><a class="val" href="tel:{S['phone'].replace(' ','')}">{S['phone']}</a></div></div>
       <div class="c-row"><span class="ico">{icon('pin',20)}</span><div><span class="lbl">Location</span><div class="val">{e(S['address'])}</div></div></div>
-      <div class="social-note">Profiles — {soc_html}. <span class="placeholder-tag">profile URLs [CONTENT TO BE ADDED]</span></div>
+      <div class="c-row" style="flex-direction:column;align-items:flex-start">
+        <span class="lbl" style="margin-bottom:12px">Social Profiles</span>
+        <p class="muted" style="font-size:13.5px;margin-bottom:12px">Follow me on my official profiles — 6 platforms.</p>
+        {socials_contact}
+      </div>
     </div>
     <div data-reveal="right">
       <form data-form="contact" novalidate>
@@ -994,6 +1058,7 @@ def contact():
 {cta_band()}'''
     ld = [bc_ld([('Contact','/contact/')]), person_ld()]
     return page('/contact/', f"Contact | {S['name']} — Let's Work Together", f"Contact {S['name']} ({S['title']}) by email, phone or the contact form to discuss your website project.", body, 'contact', ld)
+
 
 def faq():
     items = "".join(faq_item(f, i) for i,f in enumerate(C['faq']))
