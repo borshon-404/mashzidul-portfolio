@@ -1,25 +1,107 @@
 #!/usr/bin/env python3
-"""MTB Portfolio — static site builder. Components + pages from content.json."""
-import json, os, re, shutil, html
+"""
+MTB Portfolio — static site builder
+- content.json = site data
+- blog_posts_real.json = reusable BlogPost model (scalable)
+- Output = repo root (static hosting ready)
+"""
+import json, os, re, shutil, html, math
+from datetime import datetime
+from pathlib import Path
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.normpath(os.path.join(ROOT, '..'))  # repo root = web root (GitHub Pages branch-root ready)
-C = json.load(open(os.path.join(ROOT, 'content.json')))
-S = C['site']
-DOMAIN = S['domain']
+ROOT = Path(__file__).parent.resolve()
+OUT = (ROOT / "..").resolve()
+CONTENT_PATH = ROOT / "content.json"
+BLOG_PATH = ROOT / "blog_posts_real.json"
+
+# ---------------------------------------------------------------- Load & Normalize Data
+C = json.loads(CONTENT_PATH.read_text(encoding="utf-8"))
+S = C["site"]
+DOMAIN = S["domain"].rstrip("/")
 
 def e(s): return html.escape(str(s), quote=True)
 
 def relativize(htmlstr, path, depth_override=None):
-    """Rewrite root-absolute href/src to page-relative URLs so the site works
-    at any base path (domain root, /mashzidul-portfolio/, local folder…)."""
-    seg = [s for s in path.split('/') if s]
-    depth = depth_override if depth_override is not None else (
-        len(seg) if path.endswith('/') else max(len(seg) - 1, 0))
-    prefix = '../' * depth if depth else './'
+    seg = [s for s in path.split("/") if s]
+    depth = depth_override if depth_override is not None else (len(seg) if path.endswith("/") else max(len(seg)-1,0))
+    prefix = "../" * depth if depth else "./"
     return re.sub(r'(href|src)="/', lambda m: f'{m.group(1)}="{prefix}', htmlstr)
 
-# ---------------------------------------------------------------- icons
+# ---- Blog Data Model -------------------------------------------------
+# Required fields per task: id, slug, title, excerpt, content, featuredImage,
+# author, publishedDate, category, tags, readingTime, metaTitle, metaDescription, canonicalUrl
+# Optional: featuredImageAlt, publishedDateISO
+
+def _reading_time(html_content: str) -> int:
+    text = re.sub(r"<[^>]+>", " ", html_content)
+    words = len(text.split())
+    return max(1, math.ceil(words / 200))
+
+def _parse_blog_date(b: dict) -> datetime:
+    iso = b.get("publishedDateISO") or b.get("publishedDate") or "2026-09-14"
+    try:
+        return datetime.fromisoformat(iso.replace("Z",""))
+    except:
+        try:
+            return datetime.strptime(b.get("publishedDate","2026-09-14"), "%Y-%m-%d")
+        except:
+            return datetime.min
+
+def normalize_blog_post(b: dict) -> dict:
+    """Ensure every post follows the reusable BlogPost model."""
+    slug = b["slug"]
+    title = b["title"]
+    excerpt = b.get("excerpt","")
+    content = b.get("content","")
+    featured = b.get("featuredImage", slug)
+    author = b.get("author","Mashzidul Tanun Borshon")
+    pub_date = b.get("publishedDate","2026-09-14")
+    pub_iso = b.get("publishedDateISO", f"{pub_date}T00:00:00+00:00")
+    category = b.get("category","Uncategorized")
+    tags = b.get("tags",[])
+    reading = b.get("readingTime") or _reading_time(content)
+    meta_title = b.get("metaTitle") or title
+    meta_desc = b.get("metaDescription") or excerpt
+    canonical = b.get("canonicalUrl") or f"{DOMAIN}/{slug}/"
+    alt = b.get("featuredImageAlt") or title
+
+    return {
+        "id": b.get("id", slug),
+        "slug": slug,
+        "title": title,
+        "excerpt": excerpt,
+        "content": content,
+        "featuredImage": featured,
+        "featuredImageAlt": alt,
+        "author": author,
+        "publishedDate": pub_date,
+        "publishedDateISO": pub_iso,
+        "category": category,
+        "tags": tags,
+        "readingTime": reading,
+        "metaTitle": meta_title,
+        "metaDescription": meta_desc,
+        "canonicalUrl": canonical,
+    }
+
+def load_blog_posts() -> list[dict]:
+    if not BLOG_PATH.exists():
+        # fallback to content.json minimal list (should not happen after integration)
+        raw = C.get("blog", [])
+        return [normalize_blog_post({
+            "slug": x["slug"], "title": x["title"], "category": x.get("category",""),
+            "excerpt": x.get("excerpt",""), "content": "", "featuredImage": x.get("featuredImage", x["slug"]),
+            "author": "Mashzidul Tanun Borshon", "publishedDate": x.get("publishedDate","2026-09-14"),
+            "tags": [], "metaDescription": x.get("excerpt","")
+        }) for x in raw]
+    raw = json.loads(BLOG_PATH.read_text(encoding="utf-8"))
+    posts = [normalize_blog_post(b) for b in raw]
+    posts.sort(key=_parse_blog_date, reverse=True)
+    return posts
+
+BLOG_POSTS = load_blog_posts()
+
+# ---------------------------------------------------------------- Icons
 ICONS = {
  'devices':'<rect x="2" y="4" width="13" height="9" rx="1.5"/><path d="M6 17h5M8.5 13v4M17 9h3.5a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H17a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 17 9Z"/>',
  'bolt':'<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>',
@@ -47,24 +129,210 @@ ICONS = {
  'send':'<path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7Z"/>',
  'cal':'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/>',
  'user':'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+ 'share':'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5 15.4 6.5M15.4 17.5 8.6 10.5"/>',
+ 'link':'<path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/>',
 }
-SVC_ICON = {'custom-website-design':'palette','full-stack-web-development':'code','wordpress-website-development':'globe',
+SVC_ICON = {
+ 'custom-website-design':'palette','full-stack-web-development':'code','wordpress-website-development':'globe',
  'ecommerce-website-development':'cart','landing-page-design':'monitor','website-redesign':'refresh',
- 'website-maintenance':'wrench','website-speed-optimization':'gauge','seo-optimization':'search','website-bug-fixes':'bug'}
+ 'website-maintenance':'wrench','website-speed-optimization':'gauge','seo-optimization':'search','website-bug-fixes':'bug'
+}
 
 def icon(name, size=22):
-    return f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS[name]}</svg>'
+    return f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS.get(name,"")}</svg>'
 
-# ---------------------------------------------------------------- shared components
+# ---------------------------------------------------------------- Blog Helpers (reusable)
+def format_date_long(date_str: str) -> str:
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").strftime("%B %d, %Y")
+    except:
+        return date_str
+
+def format_date_short(date_str: str) -> str:
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").strftime("%b %d, %Y")
+    except:
+        return date_str
+
+def extract_toc(html_content: str) -> list[dict]:
+    pattern = r'<h([23])\s+id="([^"]+)"[^>]*>(.*?)</h\1>'
+    matches = re.findall(pattern, html_content, re.IGNORECASE | re.DOTALL)
+    toc = []
+    for level, anchor, title_html in matches:
+        title = re.sub(r"<[^>]+>", "", title_html).strip()
+        toc.append({"level": int(level), "id": anchor, "title": title})
+    return toc
+
+def rewrite_internal_links(html_content: str) -> str:
+    mapping = {
+        'https://mashzidultanun.com/contact/': '/contact/',
+        'https://mashzidultanun.com/contact': '/contact/',
+        'https://mashzidultanun.com/portfolio/': '/projects/',
+        'https://mashzidultanun.com/portfolio': '/projects/',
+        'https://mashzidultanun.com/projects/': '/projects/',
+        'https://mashzidultanun.com/about/': '/about/',
+        'https://mashzidultanun.com/about': '/about/',
+        'https://mashzidultanun.com/services/': '/services/',
+        'https://mashzidultanun.com/services': '/services/',
+        'https://mashzidultanun.com/blog/': '/blog/',
+        'https://mashzidultanun.com/blog': '/blog/',
+        'https://mashzidultanun.com/': '/',
+        'https://mashzidultanun.com': '/',
+        'https://mashzidultanun.com/website-speed-optimization/': '/website-speed-optimization/',
+        'https://mashzidultanun.com/benefits-of-responsive-web-design/': '/benefits-of-responsive-web-design/',
+        'https://mashzidultanun.com/wordpress-website-development-is-a-smart-choice/': '/wordpress-website-development-is-a-smart-choice/',
+        'https://mashzidultanun.com/benefits-of-a-professional-business-website/': '/benefits-of-a-professional-business-website/',
+        '/blog/website-speed-optimization/': '/website-speed-optimization/',
+        '/blog/benefits-of-responsive-web-design/': '/benefits-of-responsive-web-design/',
+        '/blog/wordpress-website-development-is-a-smart-choice/': '/wordpress-website-development-is-a-smart-choice/',
+        '/blog/benefits-of-a-professional-business-website/': '/benefits-of-a-professional-business-website/',
+    }
+    for old, new in sorted(mapping.items(), key=lambda x: len(x[0]), reverse=True):
+        html_content = html_content.replace(old, new)
+    return html_content
+
+def blog_image_data(base_name: str) -> dict:
+    """Local responsive image data for a blog post base name."""
+    blog_dir = OUT / "assets" / "img" / "blog"
+    candidates = [
+        (f"{base_name}-480.webp", 480),
+        (f"{base_name}-720.webp", 720),
+        (f"{base_name}-1114.webp", 1114),
+        (f"{base_name}.webp", 1200),
+    ]
+    files = []
+    for fname, w in candidates:
+        if (blog_dir / fname).exists():
+            files.append((f"/assets/img/blog/{fname}", w))
+    if files:
+        fallback = files[-1][0]
+        srcset = ", ".join(f"{p} {w}w" for p, w in files)
+    else:
+        fallback = f"/assets/img/blog/{base_name}.webp"
+        srcset = f"{fallback} 1200w"
+    return {"src": fallback, "srcset": srcset, "sizes": "(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 360px"}
+
+def blog_featured_image_data(base_name: str) -> dict:
+    """Larger srcset for article featured (uses same files but larger sizes)."""
+    blog_dir = OUT / "assets" / "img" / "blog"
+    candidates = [
+        (f"{base_name}-480.webp", 480),
+        (f"{base_name}-720.webp", 720),
+        (f"{base_name}-1114.webp", 1114),
+        (f"{base_name}.webp", 1536),
+    ]
+    parts = []
+    for fname, w in candidates:
+        if (blog_dir / fname).exists():
+            parts.append(f"/assets/img/blog/{fname} {w}w")
+    if parts:
+        return {"src": f"/assets/img/blog/{base_name}.webp", "srcset": ", ".join(parts), "sizes": "(max-width: 960px) 92vw, 960px"}
+    # fallback to card data
+    d = blog_image_data(base_name)
+    return {"src": d["src"], "srcset": d["srcset"], "sizes": "(max-width: 960px) 92vw, 960px"}
+
+# ---------------------------------------------------------------- Reusable Blog Components
+def category_badge(category: str) -> str:
+    return f'<span class="tag">{e(category)}</span>'
+
+def share_buttons(title: str, url: str) -> str:
+    """Lightweight share buttons - no third-party libs, dynamic URL/title."""
+    enc_title = e(title)
+    # url is absolute canonical
+    # Use JS for copy, href for social
+    return f'''
+<div class="share-row" aria-label="Share this article">
+  <span class="share-label">{icon('share',16)} Share</span>
+  <a class="share-btn" href="https://twitter.com/intent/tweet?text={e(title)}&url={e(url)}" target="_blank" rel="noopener noreferrer" aria-label="Share on X (Twitter)">{icon('arr',14)} X</a>
+  <a class="share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url={e(url)}" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">in</a>
+  <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u={e(url)}" target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">f</a>
+  <button class="share-btn share-copy" data-copy="{e(url)}" aria-label="Copy link">{icon('link',14)} Copy</button>
+</div>'''
+
+def table_of_contents(toc_items: list[dict]) -> str:
+    if not toc_items:
+        return ""
+    lis = "".join(
+        f'<li class="{"toc-h3" if it["level"]==3 else "toc-h2"}"><a href="#{e(it["id"])}">{e(it["title"])}</a></li>'
+        for it in toc_items
+    )
+    return f'<nav class="post-toc" aria-label="Table of contents"><h2>Table of Contents</h2><ol>{lis}</ol></nav>'
+
+def blog_card(post: dict, index: int = 0, clean_url: bool = True) -> str:
+    slug = post["slug"]
+    link = f"/{slug}/" if clean_url else f"/blog/{slug}/"
+    img = blog_image_data(post["featuredImage"])
+    tags_str = " ".join(post.get("tags",[]))
+    return f'''<article class="blog-card" data-title="{e(post["title"])}" data-category="{e(post["category"])}" data-tags="{e(tags_str)}" data-reveal>
+  <div class="blog-card__media">
+    <img src="{img["src"]}" srcset="{img["srcset"]}" sizes="{img["sizes"]}" width="720" height="450" alt="{e(post["featuredImageAlt"])}" loading="lazy" decoding="async">
+  </div>
+  <div class="blog-card__body">
+    <div class="blog-card__meta">{category_badge(post["category"])}<span class="dot"></span><span>{e(format_date_short(post["publishedDate"]))}</span><span class="dot"></span><span>{post["readingTime"]} min read</span></div>
+    <h3><a href="{link}">{e(post["title"])}</a></h3>
+    <p class="blog-card__excerpt">{e(post["excerpt"])}</p>
+    <div class="blog-card__foot"><span class="muted">By {e(post["author"])}</span><a class="link-gold" href="{link}">Read Article <span class="arr">{icon('arr',14)}</span></a></div>
+  </div>
+</article>'''
+
+def blog_grid(posts: list[dict], clean_url: bool = True) -> str:
+    if not posts:
+        return '<p class="muted">No articles yet. Check back soon.</p>'
+    cards = "".join(blog_card(p, i, clean_url) for i, p in enumerate(posts))
+    return f'<div class="blog-grid">{cards}</div>'
+
+def related_posts(current: dict, all_posts: list[dict], limit: int = 3) -> list[dict]:
+    """Sensible related: same category (+2), shared tags (+1 per tag), then recency. Exclude current."""
+    def score(other):
+        if other["slug"] == current["slug"]:
+            return -1
+        s = 0
+        if other["category"] == current["category"]:
+            s += 2
+        # shared tags
+        shared = len(set(other.get("tags",[])) & set(current.get("tags",[])))
+        s += shared
+        # small recency boost (newer = slightly higher, but not overriding category/tags)
+        # we sort by score desc then date desc, so recency handled in second key
+        return s
+
+    scored = [(score(p), _parse_blog_date(p), p) for p in all_posts if p["slug"] != current["slug"]]
+    # filter out negative (current) and sort: score desc, date desc
+    scored = [x for x in scored if x[0] >= 0]
+    scored.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    # If all scores 0 (different categories/tags), fallback to most recent
+    if not scored or all(s[0]==0 for s in scored):
+        # just most recent excluding current
+        recent = [p for p in all_posts if p["slug"] != current["slug"]][:limit]
+        return recent
+    return [p for _,_,p in scored[:limit]]
+
+def latest_posts(posts: list[dict], count: int = 3) -> list[dict]:
+    return posts[:count]
+
+def blog_header(post: dict) -> str:
+    return f'''
+    <div class="post-head">
+      {breadcrumb([('Blog','/blog/'),(post["title"], f'/{post["slug"]}/')])}
+      {category_badge(post["category"])}
+      <h1>{e(post["title"])}</h1>
+      <div class="meta">
+        <span class="author">By {e(post["author"])}</span><span class="sep"></span>
+        <span>{e(format_date_long(post["publishedDate"]))}</span><span class="sep"></span>
+        <span>{post["readingTime"]} min read</span><span class="sep"></span>
+        <span>{e(post["category"])}</span>
+      </div>
+      <p class="lead" style="margin-top:18px;max-width:62ch">{e(post["excerpt"])}</p>
+    </div>'''
+
+# ---------------------------------------------------------------- Shared Components (non-blog)
 NAV = [('home','Home','/'),('about','About','/about/'),('services','Services','/services/'),
        ('projects','Projects','/projects/'),('pricing','Pricing','/pricing/'),('blog','Blog','/blog/'),
        ('contact','Contact','/contact/')]
 
 def header(active):
-    links = ''.join(
-        f'<a href="{p}"{" aria-current=\"page\"" if k==active else ""}>{t}</a>' for k,t,p in NAV)
-    mlinks = ''.join(
-        f'<a href="{p}"{" aria-current=\"page\"" if k==active else ""}>{t}</a>' for k,t,p in NAV)
+    links = "".join(f'<a href="{p}"{" aria-current=\"page\"" if k==active else ""}>{t}</a>' for k,t,p in NAV)
+    mlinks = "".join(f'<a href="{p}"{" aria-current=\"page\"" if k==active else ""}>{t}</a>' for k,t,p in NAV)
     return f'''<header class="header" id="top">
   <div class="container header__in">
     <a class="logo logo--desktop" href="/" aria-label="Mashzidul Tanun Borshon — home">
@@ -87,8 +355,8 @@ def header(active):
 </div>'''
 
 def footer():
-    svc = ''.join(f'<li><a href="/services/#{s["slug"]}">{e(s["title"])}</a></li>' for s in C['services'][:5])
-    quick = ''.join(f'<li><a href="{p}">{t}</a></li>' for _,t,p in NAV)
+    svc = "".join(f'<li><a href="/services/#{s["slug"]}">{e(s["title"])}</a></li>' for s in C['services'][:5])
+    quick = "".join(f'<li><a href="{p}">{t}</a></li>' for _,t,p in NAV)
     return f'''<footer class="footer">
   <div class="container">
     <div class="footer__grid">
@@ -122,9 +390,7 @@ def breadcrumb(items):
 
 def section_head(eyebrow, title, lead=None, center=False, grad_word=None):
     cls = 'section-head section-head--center' if center else 'section-head'
-    t = title
-    if grad_word:
-        t = title.replace(grad_word, f'<span class="grad-text">{grad_word}</span>')
+    t = title.replace(grad_word, f'<span class="grad-text">{grad_word}</span>') if grad_word else title
     l = f'<p class="lead">{e(lead)}</p>' if lead else ''
     return f'<div class="{cls}" data-reveal><span class="eyebrow">{e(eyebrow)}</span><h2 class="h-lg">{t}</h2>{l}</div>'
 
@@ -143,7 +409,7 @@ def cta_band():
 </section>'''
 
 def project_card(p, reveal=True):
-    tech = ''.join(f'<span class="chip">{e(t)}</span>' for t in p['technologies'][:3])
+    tech = "".join(f'<span class="chip">{e(t)}</span>' for t in p['technologies'][:3])
     short = p['overview'].split('. ')[0] + '.'
     rv = ' data-reveal' if reveal else ''
     return f'''<article class="proj-card" data-category="{e(p['category'])}"{rv}>
@@ -162,25 +428,12 @@ def project_card(p, reveal=True):
 
 def price_card(t):
     cls = 'price-card price-card--featured' if t['featured'] else 'price-card'
-    feats = ''.join(f'<li>{icon('check',16)} {e(f)}</li>' for f in t['features'])
+    feats = "".join(f'<li>{icon("check",16)} {e(f)}</li>' for f in t['features'])
     return f'''<article class="{cls}" data-reveal>
   <h3>{e(t['name'])}</h3><p class="tagline">{e(t['tagline'])}</p>
   <p class="price">{e(t['price'])}</p>
   <ul>{feats}</ul>
   <a class="btn {'btn--primary' if t['featured'] else 'btn--ghost'}" href="/contact/">Choose {e(t['name'])}</a>
-</article>'''
-
-BLOG_ART = ['logo-pictorial-600.webp','logo-abstract-700.webp','logo-emblem-400.webp']
-def blog_card(b, i):
-    art = BLOG_ART[i % 3]
-    return f'''<article class="blog-card" data-title="{e(b['title'])}" data-category="{e(b['category'])}" data-reveal>
-  <div class="blog-card__media"><img src="/assets/img/brand/{art}" width="300" height="300" alt="" aria-hidden="true" loading="lazy"></div>
-  <div class="blog-card__body">
-    <div class="blog-card__meta"><span class="tag">{e(b['category'])}</span></div>
-    <h3><a href="/blog/{b['slug']}/">{e(b['title'])}</a></h3>
-    <span class="blog-status">Full article coming soon</span>
-    <a class="link-gold" href="/blog/{b['slug']}/">Read Article <span class="arr">{icon('arr',14)}</span></a>
-  </div>
 </article>'''
 
 def faq_item(f, i):
@@ -189,12 +442,12 @@ def faq_item(f, i):
   <div class="faq-item__a" id="faq-{i}" role="region" aria-labelledby="faq-q-{i}"><div><p>{e(f['a'])}</p></div></div>
 </div>'''
 
-# ---------------------------------------------------------------- page shell
-def page(path, title, desc, body, active, ld=None, og_type='website', depth=None):
-    url = DOMAIN + ('/' if path == '/' else path)
-    ld_json = ''
-    if ld:
-        ld_json = '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False) + '</script>'
+# ---------------------------------------------------------------- Page Shell
+def page(path, title, desc, body, active, ld=None, og_type='website', depth=None, og_image=None, canonical_path=None):
+    canon_path = canonical_path if canonical_path else path
+    url = DOMAIN + ('/' if canon_path == '/' else canon_path)
+    og_img = og_image if og_image else f"{DOMAIN}/assets/img/brand/og-1200x630.png"
+    ld_json = f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>' if ld else ''
     doc = f'''<!doctype html>
 <html lang="en">
 <head>
@@ -208,13 +461,13 @@ def page(path, title, desc, body, active, ld=None, og_type='website', depth=None
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(desc)}">
 <meta property="og:url" content="{url}">
-<meta property="og:image" content="{DOMAIN}/assets/img/brand/og-1200x630.png">
+<meta property="og:image" content="{og_img}">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{e(title)}">
 <meta name="twitter:description" content="{e(desc)}">
-<meta name="twitter:image" content="{DOMAIN}/assets/img/brand/og-1200x630.png">
+<meta name="twitter:image" content="{og_img}">
 <meta name="theme-color" content="#060605">
 <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/brand/favicon-64.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/brand/favicon-32.png">
@@ -254,17 +507,17 @@ def bc_ld(items):
 def home():
     h = C['hero']
     skills = [s for g in C['skillGroups'] for s in g['skills']]
-    marquee_items = ''.join(f'<span>{e(s)}</span><i>&lt;/&gt;</i>' for s in skills)
-    why = ''.join(f'''<article class="why-tile"><span class="idx">0{i+1}</span><span class="ico">{icon(w['icon'],24)}</span><h3>{e(w['title'])}</h3></article>'
-''' if False else f'''<article class="why-tile"><span class="idx">0{i+1}</span><span class="ico">{icon(w['icon'],24)}</span><h3>{e(w['title'])}</h3></article>''' for i,w in enumerate(C['whyChooseMe']))
-    stats = ''.join(f'''<div class="stat"><span class="val" data-count="{s['value']}">0</span><span class="lbl">{e(s['label'])}</span><span class="note">{e(s['note'])}</span></div>''' for s in C['stats'])
-    svc_rows = ''.join(f'''<a class="svc-row" href="/services/#{s['slug']}"><span class="no">0{i+1}</span><span class="ico">{icon(SVC_ICON[s['slug']],24)}</span><div><h3>{e(s['title'])}</h3><p>{e(s['desc'])}</p></div><span class="arr">{icon('arr',22)}</span></a>''' for i,s in enumerate(C['services']))
+    marquee_items = "".join(f'<span>{e(s)}</span><i>&lt;/&gt;</i>' for s in skills)
+    why = "".join(f'<article class="why-tile"><span class="idx">0{i+1}</span><span class="ico">{icon(w["icon"],24)}</span><h3>{e(w["title"])}</h3></article>' for i,w in enumerate(C['whyChooseMe']))
+    stats = "".join(f'<div class="stat"><span class="val" data-count="{s["value"]}">0</span><span class="lbl">{e(s["label"])}</span><span class="note">{e(s["note"])}</span></div>' for s in C['stats'])
+    svc_rows = "".join(f'<a class="svc-row" href="/services/#{s["slug"]}"><span class="no">0{i+1}</span><span class="ico">{icon(SVC_ICON[s["slug"]],24)}</span><div><h3>{e(s["title"])}</h3><p>{e(s["desc"])}</p></div><span class="arr">{icon("arr",22)}</span></a>' for i,s in enumerate(C['services']))
     info4 = C['about']['info']
-    info_html = ''.join(f'<div><dt>{e(i["label"])}</dt><dd>{e(i["value"])}</dd></div>' for i in [info4[2],info4[3],info4[1],info4[6]])
-    skill_cols = ''.join(f'''<div class="skill-col"><h3>{e(g['group'])}</h3><ul>{''.join(f'<li>{e(s)}</li>' for s in g['skills'])}</ul></div>''' for g in C['skillGroups'])
-    proj_cards = ''.join(project_card(p) for p in C['projects'])
-    price_cards = ''.join(price_card(t) for t in C['pricing'])
-    blog_cards = ''.join(blog_card(b, i) for i,b in enumerate(C['blog'][:3]))
+    info_html = "".join(f'<div><dt>{e(i["label"])}</dt><dd>{e(i["value"])}</dd></div>' for i in [info4[2],info4[3],info4[1],info4[6]])
+    skill_cols = "".join(f'<div class="skill-col"><h3>{e(g["group"])}</h3><ul>{"".join(f"<li>{e(s)}</li>" for s in g["skills"])}</ul></div>' for g in C['skillGroups'])
+    proj_cards = "".join(project_card(p) for p in C['projects'])
+    price_cards = "".join(price_card(t) for t in C['pricing'])
+    latest = latest_posts(BLOG_POSTS, 3)
+    blog_cards = blog_grid(latest, clean_url=True)
 
     body = f'''
 <section class="hero">
@@ -288,8 +541,7 @@ def home():
       <span class="portrait__glow" aria-hidden="true"></span>
       <span class="portrait__ring" aria-hidden="true"></span>
       <div class="portrait__frame">
-        <img src="/assets/img/portrait/mtb-portrait-hero-1114.webp" width="1114" height="1412" fetchpriority="high"
-             alt="Portrait of Mashzidul Tanun Borshon, web designer and full stack web developer">
+        <img src="/assets/img/portrait/mtb-portrait-hero-1114.webp" width="1114" height="1412" fetchpriority="high" alt="Portrait of Mashzidul Tanun Borshon, web designer and full stack web developer">
       </div>
       <div class="portrait__badge">
         <img src="/assets/img/brand/logo-pictorial-150.webp" width="34" height="28" alt="" aria-hidden="true">
@@ -378,7 +630,7 @@ def home():
     <div class="section-head" data-reveal><span class="eyebrow">Blog</span>
       <h2 class="h-lg" id="blog-h">Latest <span class="grad-text">articles</span></h2>
       <p class="lead">Notes on web design, development, performance and growing a business online.</p></div>
-    <div class="blog-grid">{blog_cards}</div>
+    {blog_cards}
     <p style="margin-top:34px" data-reveal><a class="link-gold" href="/blog/">All articles <span class="arr">{icon('arr',14)}</span></a></p>
   </div>
 </section>
@@ -391,10 +643,10 @@ def home():
        "makesOffer":[{"@type":"Offer","name":t['name'],"price":t['price'].replace('Starting From $',''),"priceCurrency":"USD"} for t in C['pricing']]}]
     return page('/', f"{S['name']} — {S['title']} | Khulna, Bangladesh", S['metaDescription'], body, 'home', ld)
 
-# ---------------------------------------------------------------- ABOUT
+# ---------------------------------------------------------------- Other Pages (unchanged structure)
 def about():
-    info = ''.join(f'<div><dt>{e(i["label"])}</dt><dd>{e(i["value"])}</dd></div>' for i in C['about']['info'])
-    skill_cols = ''.join(f'''<div class="skill-col"><h3>{e(g['group'])}</h3><ul>{''.join(f'<li>{e(s)}</li>' for s in g['skills'])}</ul></div>''' for g in C['skillGroups'])
+    info = "".join(f'<div><dt>{e(i["label"])}</dt><dd>{e(i["value"])}</dd></div>' for i in C['about']['info'])
+    skill_cols = "".join(f'<div class="skill-col"><h3>{e(g["group"])}</h3><ul>{"".join(f"<li>{e(s)}</li>" for s in g["skills"])}</ul></div>' for g in C['skillGroups'])
     body = f'''
 <section class="page-hero">
   <img class="watermark" src="/assets/img/brand/logo-abstract-700.webp" width="700" height="760" alt="" aria-hidden="true">
@@ -413,7 +665,7 @@ def about():
     <div data-reveal="right">
       <span class="eyebrow">My story</span>
       <h2 class="h-md" style="margin:12px 0 16px">Websites that are visually appealing and easy to use</h2>
-      {''.join(f'<p class="lead" style="margin-bottom:16px">{e(p)}</p>' for p in C['about']['paragraphs'])}
+      {"".join(f'<p class="lead" style="margin-bottom:16px">{e(p)}</p>' for p in C['about']['paragraphs'])}
       <dl class="info-list">{info}</dl>
       <div style="display:flex;gap:14px;flex-wrap:wrap">
         <a class="btn btn--primary" href="/contact/">Work With Me</a>
@@ -444,16 +696,10 @@ def about():
 </section>
 {cta_band()}'''
     ld = [person_ld(), bc_ld([('About','/about/')])]
-    return page('/about/', f"About | {S['name']} — {S['title']}",
-      f"Learn about {S['name']}, a {S['title'].lower()} based in Bangladesh — skills, background and how he works.", body, 'about', ld)
+    return page('/about/', f"About | {S['name']} — {S['title']}", f"Learn about {S['name']}, a {S['title'].lower()} based in Bangladesh — skills, background and how he works.", body, 'about', ld)
 
-# ---------------------------------------------------------------- SERVICES
 def services():
-    cards = ''.join(f'''<article class="svc-card" id="{s['slug']}" data-reveal>
-      <div class="top"><span class="ico">{icon(SVC_ICON[s['slug']],26)}</span><span class="no">0{i+1}</span></div>
-      <h3>{e(s['title'])}</h3><p>{e(s['desc'])}</p>
-      <a class="link-gold" href="/contact/">Request this service <span class="arr">{icon('arr',14)}</span></a>
-    </article>''' for i,s in enumerate(C['services']))
+    cards = "".join(f'<article class="svc-card" id="{s["slug"]}" data-reveal><div class="top"><span class="ico">{icon(SVC_ICON[s["slug"]],26)}</span><span class="no">0{i+1}</span></div><h3>{e(s["title"])}</h3><p>{e(s["desc"])}</p><a class="link-gold" href="/contact/">Request this service <span class="arr">{icon("arr",14)}</span></a></article>' for i,s in enumerate(C['services']))
     body = f'''
 <section class="page-hero">
   <img class="watermark" src="/assets/img/brand/logo-pictorial-300.webp" width="300" height="248" alt="" aria-hidden="true">
@@ -463,21 +709,16 @@ def services():
     <p class="lead" style="margin-top:16px">I offer a range of web design and development services — everything your website needs from first launch to ongoing growth.</p>
   </div>
 </section>
-<section class="section section--tight">
-  <div class="container"><div class="svc-grid">{cards}</div></div>
-</section>
+<section class="section section--tight"><div class="container"><div class="svc-grid">{cards}</div></div></section>
 {cta_band()}'''
     ld = [person_ld(), bc_ld([('Services','/services/')]),
-      {"@context":"https://schema.org","@type":"ItemList","itemListElement":[
-        {"@type":"ListItem","position":i+1,"name":s['title'],"url":f"{DOMAIN}/services/#{s['slug']}"} for i,s in enumerate(C['services'])]}]
-    return page('/services/', f"Services | {S['name']} — Web Design & Development",
-      "Custom website design, full stack development, WordPress, eCommerce, landing pages, redesign, maintenance, speed and SEO — services by Mashzidul Tanun Borshon.", body, 'services', ld)
+      {"@context":"https://schema.org","@type":"ItemList","itemListElement":[{"@type":"ListItem","position":i+1,"name":s['title'],"url":f"{DOMAIN}/services/#{s['slug']}"} for i,s in enumerate(C['services'])]}]
+    return page('/services/', f"Services | {S['name']} — Web Design & Development", "Custom website design, full stack development, WordPress, eCommerce, landing pages, redesign, maintenance, speed and SEO — services by Mashzidul Tanun Borshon.", body, 'services', ld)
 
-# ---------------------------------------------------------------- PROJECTS
 def projects():
     cats = ['All'] + [p['category'] for p in C['projects']]
-    filters = ''.join(f'<button class="filter-btn" data-filter="{ "all" if c=="All" else e(c) }" aria-pressed="{"true" if c=="All" else "false"}">{e(c)}</button>' for c in cats)
-    cards = ''.join(project_card(p) for p in C['projects'])
+    filters = "".join(f'<button class="filter-btn" data-filter="{ "all" if c=="All" else e(c) }" aria-pressed="{"true" if c=="All" else "false"}">{e(c)}</button>' for c in cats)
+    cards = "".join(project_card(p) for p in C['projects'])
     body = f'''
 <section class="page-hero">
   <img class="watermark" src="/assets/img/brand/logo-abstract-700.webp" width="700" height="760" alt="" aria-hidden="true">
@@ -495,19 +736,15 @@ def projects():
 </section>
 {cta_band()}'''
     ld = [person_ld(), bc_ld([('Projects','/projects/')]),
-      {"@context":"https://schema.org","@type":"ItemList","itemListElement":[
-        {"@type":"ListItem","position":i+1,"name":p['title'],"url":f"{DOMAIN}/projects/{p['slug']}/"} for i,p in enumerate(C['projects'])]}]
-    return page('/projects/', f"Projects | {S['name']} — Portfolio",
-      "Selected projects by Mashzidul Tanun Borshon: business websites, corporate sites, portfolios and agency websites with case studies.", body, 'projects', ld)
+      {"@context":"https://schema.org","@type":"ItemList","itemListElement":[{"@type":"ListItem","position":i+1,"name":p['title'],"url":f"{DOMAIN}/projects/{p['slug']}/"} for i,p in enumerate(C['projects'])]}]
+    return page('/projects/', f"Projects | {S['name']} — Portfolio", "Selected projects by Mashzidul Tanun Borshon: business websites, corporate sites, portfolios and agency websites with case studies.", body, 'projects', ld)
 
 def project_detail(p, idx):
     nxt = C['projects'][(idx+1) % len(C['projects'])]
     prv = C['projects'][(idx-1) % len(C['projects'])]
-    tech = ''.join(f'<span class="chip">{e(t)}</span>' for t in p['technologies'])
-    feats = ''.join(f'<li>{icon('check',16)} {e(f)}</li>' for f in p['features'])
-    live = ''
-    if p.get('liveUrl'):
-        live = f'<div class="row"><dt>Live URL</dt><dd><a href="{e(p["liveUrl"])}" rel="noopener">{e(p["liveUrl"])}</a></dd></div>'
+    tech = "".join(f'<span class="chip">{e(t)}</span>' for t in p['technologies'])
+    feats = "".join(f'<li>{icon("check",16)} {e(f)}</li>' for f in p['features'])
+    live = f'<div class="row"><dt>Live URL</dt><dd><a href="{e(p["liveUrl"])}" rel="noopener">{e(p["liveUrl"])}</a></dd></div>' if p.get('liveUrl') else ''
     body = f'''
 <section class="page-hero">
   <div class="container">{breadcrumb([('Projects','/projects/'),(p['title'],f'/projects/{p["slug"]}/')])}
@@ -550,14 +787,11 @@ def project_detail(p, idx):
 </section>
 {cta_band()}'''
     ld = [bc_ld([('Projects','/projects/'),(p['title'],f'/projects/{p["slug"]}/')]),
-      {"@context":"https://schema.org","@type":"CreativeWork","name":p['title'],"description":p['overview'],
-       "creator":{"@type":"Person","name":S['name']},"keywords":", ".join(p['technologies'])}]
-    return page(f'/projects/{p["slug"]}/', f"{p['title']} | Portfolio | {S['name']}",
-      p['overview'][:155], body, 'projects', ld, 'article')
+      {"@context":"https://schema.org","@type":"CreativeWork","name":p['title'],"description":p['overview'],"creator":{"@type":"Person","name":S['name']},"keywords":", ".join(p['technologies'])}]
+    return page(f'/projects/{p["slug"]}/', f"{p['title']} | Portfolio | {S['name']}", p['overview'][:155], body, 'projects', ld, 'article')
 
-# ---------------------------------------------------------------- PRICING
 def pricing():
-    cards = ''.join(price_card(t) for t in C['pricing'])
+    cards = "".join(price_card(t) for t in C['pricing'])
     body = f'''
 <section class="page-hero">
   <img class="watermark" src="/assets/img/brand/logo-emblem-400.webp" width="400" height="398" alt="" aria-hidden="true">
@@ -584,88 +818,146 @@ def pricing():
 </section>
 {cta_band()}'''
     ld = [bc_ld([('Pricing','/pricing/')]),
-      {"@context":"https://schema.org","@type":"OfferCatalog","name":"Website packages",
-       "itemListElement":[{"@type":"Offer","name":t['name'],"description":t['tagline'],
-        "price":t['price'].replace('Starting From $',''),"priceCurrency":"USD"} for t in C['pricing']]}]
-    return page('/pricing/', f"Pricing | {S['name']} — Website Packages",
-      "Transparent website pricing from Mashzidul Tanun Borshon: Basic, Standard and Premium packages with delivery times and support.", body, 'pricing', ld)
+      {"@context":"https://schema.org","@type":"OfferCatalog","name":"Website packages","itemListElement":[{"@type":"Offer","name":t['name'],"description":t['tagline'],"price":t['price'].replace('Starting From $',''),"priceCurrency":"USD"} for t in C['pricing']]}]
+    return page('/pricing/', f"Pricing | {S['name']} — Website Packages", "Transparent website pricing from Mashzidul Tanun Borshon: Basic, Standard and Premium packages with delivery times and support.", body, 'pricing', ld)
 
-# ---------------------------------------------------------------- BLOG
-def blog():
-    cards = ''.join(blog_card(b, i) for i,b in enumerate(C['blog']))
+# ---------------------------------------------------------------- Blog Archive (scalable)
+def blog_archive():
+    # Category filter buttons (like projects)
+    cats = sorted(set(p["category"] for p in BLOG_POSTS))
+    filter_btns = '<button class="filter-btn" data-filter="all" aria-pressed="true">All</button>' + "".join(f'<button class="filter-btn" data-filter="{e(c)}" aria-pressed="false">{e(c)}</button>' for c in cats)
+    grid = blog_grid(BLOG_POSTS, clean_url=True)
     body = f'''
 <section class="page-hero">
   <img class="watermark" src="/assets/img/brand/logo-pictorial-300.webp" width="300" height="248" alt="" aria-hidden="true">
   <div class="container">{breadcrumb([('Blog','/blog/')])}
     <span class="eyebrow">Blog</span>
     <h1 class="h-xl" style="margin-top:12px">Articles &amp; <span class="grad-text">insights</span></h1>
-    <p class="lead" style="margin-top:16px">Practical writing on web design, development, performance and growing a business online.</p>
+    <p class="lead" style="margin-top:16px">Practical writing on web design, development, performance and growing a business online — {len(BLOG_POSTS)} articles and counting. New posts are automatically listed here.</p>
   </div>
 </section>
 <section class="section section--tight">
   <div class="container">
-    <div class="field" style="max-width:420px;margin-bottom:34px">
-      <label for="blog-search">Search articles</label>
-      <input class="blog-search" id="blog-search" type="search" placeholder="Search by title or topic…">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:end;margin-bottom:28px">
+      <div class="field" style="max-width:380px;flex:1;min-width:260px">
+        <label for="blog-search">Search articles</label>
+        <input class="blog-search" id="blog-search" type="search" placeholder="Search by title, category or tag…">
+      </div>
+      <div class="filters" role="group" aria-label="Filter by category" style="margin-bottom:0">{filter_btns}</div>
     </div>
-    <div class="blog-grid">{cards}</div>
-    <p class="blog-empty muted" style="display:none;margin-top:30px">No articles match your search.</p>
-    <p class="form-note" style="margin-top:30px">Full articles are being written and will be published here soon.</p>
+    {grid}
+    <p class="blog-empty muted" style="display:none;margin-top:30px">No articles match your search or filter.</p>
   </div>
 </section>
 {cta_band()}'''
     ld = [bc_ld([('Blog','/blog/')]),
-      {"@context":"https://schema.org","@type":"Blog","name":f"{S['name']} — Blog","url":DOMAIN+"/blog/","author":person_ld()}]
-    return page('/blog/', f"Blog | {S['name']} — Web Design & Development Articles",
-      "Articles on web design, development, SEO, performance, security and UX by Mashzidul Tanun Borshon.", body, 'blog', ld)
+      {"@context":"https://schema.org","@type":"Blog","name":f"{S['name']} — Blog","url":f"{DOMAIN}/blog/","author":person_ld(),
+       "blogPost": [{"@type":"BlogPosting","headline":p["title"],"url":p["canonicalUrl"]} for p in BLOG_POSTS]}]
+    return page('/blog/', f"Blog | {S['name']} — Web Design & Development Articles", f"Articles on web design, development, SEO, performance, security and UX by Mashzidul Tanun Borshon — {len(BLOG_POSTS)} articles.", body, 'blog', ld)
 
-def blog_post(b, idx):
-    nxt = C['blog'][(idx+1) % len(C['blog'])]
-    prv = C['blog'][(idx-1) % len(C['blog'])]
-    rel = [x for x in C['blog'] if x['slug'] != b['slug']][:3]
-    rel_cards = ''.join(blog_card(r, i) for i,r in enumerate(rel))
+# ---------------------------------------------------------------- Blog Detail (single reusable template)
+def render_blog_post(post: dict, idx: int, route_path: str, canonical_path: str) -> str:
+    """Single source of truth for rendering a blog post — used for both clean and legacy routes."""
+    slug = post["slug"]
+    title = post["title"]
+    excerpt = post["excerpt"]
+    category = post["category"]
+    author = post["author"]
+    date_long = format_date_long(post["publishedDate"])
+    date_iso = post["publishedDateISO"]
+    reading = post["readingTime"]
+    img_base = post["featuredImage"]
+    img_alt = post["featuredImageAlt"]
+    og_img_url = DOMAIN + blog_image_data(img_base)["src"]
+
+    # Content processing
+    content_html = rewrite_internal_links(post["content"])
+    toc_items = extract_toc(content_html)
+    toc = table_of_contents(toc_items)
+    featured = blog_featured_image_data(img_base)
+
+    # Prev / Next (circular)
+    prev_post = BLOG_POSTS[(idx-1) % len(BLOG_POSTS)]
+    next_post = BLOG_POSTS[(idx+1) % len(BLOG_POSTS)]
+
+    # Related (sensible)
+    rel = related_posts(post, BLOG_POSTS, 3)
+    rel_grid = blog_grid(rel, clean_url=True)
+
+    # Share
+    share = share_buttons(title, post["canonicalUrl"])
+
     body = f'''
 <section class="page-hero">
   <div class="container">
-    <div class="post-head">
-      {breadcrumb([('Blog','/blog/'),(b['title'],f'/blog/{b["slug"]}/')])}
-      <span class="tag">{e(b['category'])}</span>
-      <h1>{e(b['title'])}</h1>
-      <div class="meta"><span>By {e(S['name'])}</span><span>·</span><span class="blog-status">Article in progress</span></div>
-    </div>
+    {blog_header(post)}
   </div>
 </section>
+
+<div class="container">
+  <div class="post-featured" data-reveal>
+    <img src="{featured["src"]}" srcset="{featured["srcset"]}" sizes="{featured["sizes"]}" width="1536" height="1024" alt="{e(img_alt)}" loading="eager" decoding="async" fetchpriority="high">
+    <div class="post-featured__cap">{e(img_alt)}</div>
+  </div>
+</div>
+
 <section class="section section--tight">
   <div class="container">
-    <div class="post-body">
-      <div class="notice" data-reveal>
-        <p><b>This article is currently being written.</b> The full content for “{e(b['title'])}” will be published here.
-        <span class="placeholder-tag" style="margin-top:12px">[CONTENT TO BE ADDED]</span></p>
+    <div class="post-layout">
+      {toc}
+      <div class="post-body">
+        <article class="prose" data-reveal>
+          {content_html}
+          {share}
+          <div class="post-cta">
+            <h3>Need help with your website?</h3>
+            <p>I design and develop modern, responsive, and fast websites focused on your business goals. From business sites to e-commerce and custom web apps — let's build something that works for you.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+              <a class="btn btn--primary btn--sm" href="/contact/">Let's Work Together <span class="arr">{icon('arr',14)}</span></a>
+              <a class="btn btn--ghost btn--sm" href="/projects/">View My Work</a>
+            </div>
+          </div>
+        </article>
+        <nav class="pn-nav" aria-label="More articles">
+          <a href="/{prev_post["slug"]}/"><span class="dir">← Previous</span>{e(prev_post["title"])}</a>
+          <a class="next" href="/{next_post["slug"]}/"><span class="dir">Next →</span>{e(next_post["title"])}</a>
+        </nav>
       </div>
     </div>
-    <nav class="pn-nav" aria-label="More articles">
-      <a href="/blog/{prv['slug']}/"><span class="dir">← Previous</span>{e(prv['title'])}</a>
-      <a class="next" href="/blog/{nxt['slug']}/"><span class="dir">Next →</span>{e(nxt['title'])}</a>
-    </nav>
   </div>
 </section>
-<section class="section section--tight bg-vignette" aria-labelledby="rel-h">
-  <div class="container">
-    <div class="section-head" data-reveal><span class="eyebrow">Keep reading</span><h2 class="h-md" id="rel-h">Related articles</h2></div>
-    <div class="blog-grid">{rel_cards}</div>
-  </div>
-</section>
-{cta_band()}'''
-    ld = [bc_ld([('Blog','/blog/'),(b['title'],f'/blog/{b["slug"]}/')]),
-      {"@context":"https://schema.org","@type":"BlogPosting","headline":b['title'],
-       "author":{"@type":"Person","name":S['name']},"url":f"{DOMAIN}/blog/{b['slug']}/","articleSection":b['category']}]
-    return page(f'/blog/{b["slug"]}/', f"{b['title']} | Blog | {S['name']}",
-      f"{b['title']} — an article by {S['name']}, {S['title'].lower()}.", body, 'blog', ld, 'article')
 
-# ---------------------------------------------------------------- CONTACT
+<section class="section section--tight bg-vignette post-related" aria-labelledby="rel-h">
+  <div class="container">
+    <div class="section-head" data-reveal><span class="eyebrow">Keep reading</span><h2 class="h-md" id="rel-h">Related articles</h2><p class="lead">Based on category and tags — not random.</p></div>
+    {rel_grid}
+  </div>
+</section>
+
+{cta_band()}'''
+
+    ld = [
+      bc_ld([('Blog','/blog/'),(title, f'/{slug}/')]),
+      {"@context":"https://schema.org","@type":"BlogPosting",
+       "headline": title,
+       "description": post["metaDescription"],
+       "image": og_img_url,
+       "author": {"@type":"Person","name": author},
+       "datePublished": date_iso,
+       "dateModified": date_iso,
+       "mainEntityOfPage": {"@type":"WebPage","@id": post["canonicalUrl"]},
+       "articleSection": category,
+       "keywords": ", ".join(post.get("tags",[])),
+       "url": post["canonicalUrl"],
+       "wordCount": len(re.sub(r"<[^>]+>"," ",content_html).split()),
+       "timeRequired": f"PT{reading}M"}
+    ]
+    return page(route_path, f"{title} | Blog | {S['name']}", post["metaDescription"], body, 'blog', ld, 'article', og_image=og_img_url, canonical_path=canonical_path)
+
+# ---------------------------------------------------------------- Contact, FAQ, Legal, Booking, 404 (unchanged)
 def contact():
     socials = [s for s in S['socials'] if s['label']]
-    soc_html = ''.join(f'<b>{e(s["platform"])}</b>: {e(s["label"])}' for s in socials)
+    soc_html = "".join(f'<b>{e(s["platform"])}</b>: {e(s["label"])}' for s in socials)
     body = f'''
 <section class="page-hero">
   <img class="watermark" src="/assets/img/brand/logo-abstract-700.webp" width="700" height="760" alt="" aria-hidden="true">
@@ -701,12 +993,10 @@ def contact():
 </section>
 {cta_band()}'''
     ld = [bc_ld([('Contact','/contact/')]), person_ld()]
-    return page('/contact/', f"Contact | {S['name']} — Let's Work Together",
-      f"Contact {S['name']} ({S['title']}) by email, phone or the contact form to discuss your website project.", body, 'contact', ld)
+    return page('/contact/', f"Contact | {S['name']} — Let's Work Together", f"Contact {S['name']} ({S['title']}) by email, phone or the contact form to discuss your website project.", body, 'contact', ld)
 
-# ---------------------------------------------------------------- FAQ
 def faq():
-    items = ''.join(faq_item(f, i) for i,f in enumerate(C['faq']))
+    items = "".join(faq_item(f, i) for i,f in enumerate(C['faq']))
     body = f'''
 <section class="page-hero">
   <div class="container">{breadcrumb([('FAQ','/faq/')])}
@@ -715,27 +1005,20 @@ def faq():
     <p class="lead" style="margin-top:16px">Straight answers about how I work, timelines and support.</p>
   </div>
 </section>
-<section class="section section--tight">
-  <div class="container"><div class="faq-list" data-reveal>{items}</div></div>
-</section>
+<section class="section section--tight"><div class="container"><div class="faq-list" data-reveal>{items}</div></div></section>
 {cta_band()}'''
-    ld = [bc_ld([('FAQ','/faq/')]),
-      {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
-        {"@type":"Question","name":f['q'],"acceptedAnswer":{"@type":"Answer","text":f['a']}} for f in C['faq']]}]
-    return page('/faq/', f"FAQ | {S['name']} — Web Design & Development Questions",
-      "Answers to common questions about services, timelines, mobile-friendliness, redesigns, support and getting started.", body, '', ld)
+    ld = [bc_ld([('FAQ','/faq/')]), {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":f['q'],"acceptedAnswer":{"@type":"Answer","text":f['a']}} for f in C['faq']]}]
+    return page('/faq/', f"FAQ | {S['name']} — Web Design & Development Questions", "Answers to common questions about services, timelines, mobile-friendliness, redesigns, support and getting started.", body, '', ld)
 
-# ---------------------------------------------------------------- LEGAL
 def terms():
-    lis = ''.join(f'<li>{e(t)}</li>' for t in C['terms'])
+    lis = "".join(f'<li>{e(t)}</li>' for t in C['terms'])
     body = f'''
 <section class="page-hero"><div class="container">{breadcrumb([('Terms & Conditions','/terms/')])}
   <span class="eyebrow">Legal</span><h1 class="h-lg" style="margin-top:12px">Terms and <span class="grad-text">Conditions</span></h1>
   <p class="lead" style="margin-top:14px">By using this website, you agree to the following terms:</p></div></section>
 <section class="section section--tight"><div class="container prose"><ul>{lis}</ul>
   <p style="margin-top:26px">Questions about these terms? <a href="/contact/" style="color:var(--gold-300)">Contact me</a> any time.</p></div></section>'''
-    return page('/terms/', f"Terms & Conditions | {S['name']}",
-      "Terms and conditions for using the website and services of Mashzidul Tanun Borshon.", body, '', bc_ld([('Terms & Conditions','/terms/')]))
+    return page('/terms/', f"Terms & Conditions | {S['name']}", "Terms and conditions for using the website and services of Mashzidul Tanun Borshon.", body, '', bc_ld([('Terms & Conditions','/terms/')]))
 
 def privacy():
     P = C['privacy']
@@ -745,19 +1028,17 @@ def privacy():
   <p class="lead" style="margin-top:14px">{e(P['intro'])}</p></div></section>
 <section class="section section--tight"><div class="container prose">
   <h2>Information collected through this website may include</h2>
-  <ul>{''.join(f'<li>{e(x)}</li>' for x in P['collected'])}</ul>
+  <ul>{"".join(f"<li>{e(x)}</li>" for x in P['collected'])}</ul>
   <h2>This information is used solely to</h2>
-  <ul>{''.join(f'<li>{e(x)}</li>' for x in P['usedFor'])}</ul>
+  <ul>{"".join(f"<li>{e(x)}</li>" for x in P['usedFor'])}</ul>
   <p style="margin-top:20px">{e(P['closing'])}</p>
   <p style="margin-top:14px">{e(P['consent'])}</p>
 </div></section>'''
-    return page('/privacy/', f"Privacy Policy | {S['name']}",
-      "How personal information collected through this website is used and protected.", body, '', bc_ld([('Privacy Policy','/privacy/')]))
+    return page('/privacy/', f"Privacy Policy | {S['name']}", "How personal information collected through this website is used and protected.", body, '', bc_ld([('Privacy Policy','/privacy/')]))
 
-# ---------------------------------------------------------------- BOOKING
 def booking():
-    agenda = ''.join(f'<li>{icon('check',16)} {e(a)}</li>' for a in C['booking']['agenda'])
-    checks = ''.join(f'<label style="display:flex;gap:10px;align-items:center;font-size:14.5px;color:var(--ink-2);text-transform:none;letter-spacing:0;font-family:var(--font-body)"><input type="checkbox" name="agenda" value="{e(a)}" style="width:auto;accent-color:#ECBD61"> {e(a)}</label>' for a in C['booking']['agenda'])
+    agenda = "".join(f'<li>{icon("check",16)} {e(a)}</li>' for a in C['booking']['agenda'])
+    checks = "".join(f'<label style="display:flex;gap:10px;align-items:center;font-size:14.5px;color:var(--ink-2);text-transform:none;letter-spacing:0;font-family:var(--font-body)"><input type="checkbox" name="agenda" value="{e(a)}" style="width:auto;accent-color:#ECBD61"> {e(a)}</label>' for a in C['booking']['agenda'])
     body = f'''
 <section class="page-hero">
   <img class="watermark" src="/assets/img/brand/logo-emblem-400.webp" width="400" height="398" alt="" aria-hidden="true">
@@ -781,9 +1062,7 @@ def booking():
           <div class="field"><label for="b-email">Email</label><input id="b-email" name="email" type="email" autocomplete="email" required><span class="err-msg">Please enter a valid email address.</span></div>
           <div class="field"><label for="b-date">Preferred date</label><input id="b-date" name="date" type="date"></div>
           <div class="field"><label for="b-budget">Budget range</label>
-            <select id="b-budget" name="budget">
-              <option value="">Select…</option><option>Under $100</option><option>$100 – $250</option><option>$250+</option><option>Not sure yet</option>
-            </select></div>
+            <select id="b-budget" name="budget"><option value="">Select…</option><option>Under $100</option><option>$100 – $250</option><option>$250+</option><option>Not sure yet</option></select></div>
           <div class="field field--full"><span id="agenda-lbl" style="font-family:var(--font-display);font-size:12.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-muted)">Agenda (optional)</span>
             <div role="group" aria-labelledby="agenda-lbl" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-top:8px">{checks}</div>
           </div>
@@ -797,12 +1076,9 @@ def booking():
   </div>
 </section>
 {cta_band()}'''
-    ld = [bc_ld([('Book an Appointment','/booking/')]),
-      {"@context":"https://schema.org","@type":"Appointment","description":C['booking']['intro'],"provider":person_ld()}]
-    return page('/booking/', f"Book an Appointment | {S['name']}",
-      "Book a free consultation with Mashzidul Tanun Borshon to discuss project requirements, features, design, timeline and budget.", body, '', ld)
+    ld = [bc_ld([('Book an Appointment','/booking/')]), {"@context":"https://schema.org","@type":"Appointment","description":C['booking']['intro'],"provider":person_ld()}]
+    return page('/booking/', f"Book an Appointment | {S['name']}", "Book a free consultation with Mashzidul Tanun Borshon to discuss project requirements, features, design, timeline and budget.", body, '', ld)
 
-# ---------------------------------------------------------------- 404
 def notfound():
     body = f'''
 <section class="section" style="padding:calc(var(--header-h) + 90px) 0 110px;text-align:center">
@@ -818,23 +1094,34 @@ def notfound():
 </section>'''
     return page('/404/', f"Page Not Found | {S['name']}", "The page you were looking for could not be found.", body, '', depth=0)
 
-# ---------------------------------------------------------------- build
+# ---------------------------------------------------------------- Build
 PAGES = []
-def emit(path, htmlstr):
-    rel = path.lstrip('/')
-    fp = os.path.join(OUT, rel, 'index.html') if not rel.endswith('.html') else os.path.join(OUT, rel)
-    os.makedirs(os.path.dirname(fp), exist_ok=True)
-    open(fp, 'w', encoding='utf-8').write(htmlstr)
-    PAGES.append(path if path.endswith('/') else path)
 
+def emit(path: str, htmlstr: str):
+    rel = path.lstrip("/")
+    fp = OUT / (Path(rel) / "index.html") if not rel.endswith(".html") else OUT / rel
+    fp.parent.mkdir(parents=True, exist_ok=True)
+    fp.write_text(htmlstr, encoding="utf-8")
+    PAGES.append(path)
+
+# Core pages
 emit('/', home())
 emit('/about/', about())
 emit('/services/', services())
 emit('/projects/', projects())
-for i,p in enumerate(C['projects']): emit(f'/projects/{p["slug"]}/', project_detail(p, i))
+for i,p in enumerate(C['projects']):
+    emit(f'/projects/{p["slug"]}/', project_detail(p, i))
 emit('/pricing/', pricing())
-emit('/blog/', blog())
-for i,b in enumerate(C['blog']): emit(f'/blog/{b["slug"]}/', blog_post(b, i))
+emit('/blog/', blog_archive())
+
+# Blog posts — clean URLs primary, legacy for backward compat (canonical → clean)
+for i, post in enumerate(BLOG_POSTS):
+    clean = f'/{post["slug"]}/'
+    legacy = f'/blog/{post["slug"]}/'
+    # single render function, different route_path but same canonical
+    emit(clean, render_blog_post(post, i, clean, clean))
+    emit(legacy, render_blog_post(post, i, legacy, clean))
+
 emit('/contact/', contact())
 emit('/faq/', faq())
 emit('/terms/', terms())
@@ -842,22 +1129,22 @@ emit('/privacy/', privacy())
 emit('/booking/', booking())
 emit('/404.html', notfound())
 
-# assets: css + js
-os.makedirs(os.path.join(OUT, 'assets/css'), exist_ok=True)
-os.makedirs(os.path.join(OUT, 'assets/js'), exist_ok=True)
-shutil.copy(os.path.join(ROOT, 'assets/css/fonts.css'), os.path.join(OUT, 'assets/css/fonts.css'))
-shutil.copy(os.path.join(ROOT, 'assets/css/styles.css'), os.path.join(OUT, 'assets/css/styles.css'))
-shutil.copy(os.path.join(ROOT, 'assets/js/main.js'), os.path.join(OUT, 'assets/js/main.js'))
+# Assets
+(OUT / "assets" / "css").mkdir(parents=True, exist_ok=True)
+(OUT / "assets" / "js").mkdir(parents=True, exist_ok=True)
+shutil.copy(ROOT / "assets" / "css" / "fonts.css", OUT / "assets" / "css" / "fonts.css")
+shutil.copy(ROOT / "assets" / "css" / "styles.css", OUT / "assets" / "css" / "styles.css")
+shutil.copy(ROOT / "assets" / "js" / "main.js", OUT / "assets" / "js" / "main.js")
 
-# sitemap + robots
-urls = [p for p in PAGES if p != '/404.html']
-with open(os.path.join(OUT, 'sitemap.xml'), 'w') as f:
-    f.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
-    for u in urls:
-        loc = DOMAIN + (u if u.endswith('/') else u)
-        f.write(f'  <url><loc>{loc}</loc><changefreq>monthly</changefreq></url>\n')
-    f.write('</urlset>\n')
-with open(os.path.join(OUT, 'robots.txt'), 'w') as f:
-    f.write(f'User-agent: *\nAllow: /\nSitemap: {DOMAIN}/sitemap.xml\n')
+# Sitemap — only clean URLs (no legacy duplicates)
+urls = [p for p in PAGES if p != '/404.html' and not (p.startswith('/blog/') and p != '/blog/')]
+urls = sorted(set(urls))
+sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+for u in urls:
+    loc = DOMAIN + (u if u.endswith('/') else u)
+    sitemap += f'  <url><loc>{loc}</loc><changefreq>monthly</changefreq></url>\n'
+sitemap += '</urlset>\n'
+(OUT / "sitemap.xml").write_text(sitemap, encoding="utf-8")
+(OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {DOMAIN}/sitemap.xml\n", encoding="utf-8")
 
-print(f'Built {len(PAGES)} pages.')
+print(f"Built {len(PAGES)} pages — {len(BLOG_POSTS)} posts ×2 routes = {len(BLOG_POSTS)*2} blog pages + {len(PAGES)-len(BLOG_POSTS)*2} other. Clean: {[p['slug'] for p in BLOG_POSTS]}")

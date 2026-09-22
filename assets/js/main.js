@@ -106,23 +106,47 @@
     });
   });
 
-  /* ---------- Project filters ---------- */
-  var filterBtns = $$('.filter-btn');
-  if (filterBtns.length) {
-    filterBtns.forEach(function (btn) {
+  /* ---------- Project & Blog filters (reusable) ---------- */
+  function setupFilterGroup(gridSelector, cardSelector) {
+    var container = $(gridSelector);
+    if (!container) return;
+    var group = container.closest('.section') || container.parentElement;
+    if (!group) return;
+    var btns = $$('.filter-btn', group);
+    if (!btns.length) return;
+    // Only bind if this group contains the target grid
+    var hasGrid = group.querySelector(gridSelector) || document.querySelector(gridSelector);
+    if (!hasGrid) return;
+    btns.forEach(function (btn) {
       btn.addEventListener('click', function () {
-        filterBtns.forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+        var scope = btn.closest('.section') || document;
+        var localBtns = $$('.filter-btn', scope);
+        localBtns.forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
         btn.setAttribute('aria-pressed', 'true');
         var f = btn.getAttribute('data-filter');
-        $$('.proj-grid .proj-card').forEach(function (card) {
-          var show = f === 'all' || card.getAttribute('data-category') === f;
+        $$(cardSelector).forEach(function (card) {
+          // Only filter cards that are inside the same section as the button group for blog,
+          // but for projects we filter globally (projects page has only one grid)
+          var cardSection = card.closest('.section');
+          var btnSection = btn.closest('.section');
+          if (cardSection && btnSection && cardSection !== btnSection) return;
+          var cat = card.getAttribute('data-category') || '';
+          var show = f === 'all' || cat === f;
           card.style.display = show ? '' : 'none';
         });
+        // Handle empty state for blog
+        var empty = $('.blog-empty');
+        if (empty && gridSelector.indexOf('blog') > -1) {
+          var visible = $$(cardSelector).filter(function (c) { return c.style.display !== 'none'; });
+          empty.style.display = visible.length ? 'none' : '';
+        }
       });
     });
   }
+  setupFilterGroup('.proj-grid', '.proj-grid .proj-card');
+  setupFilterGroup('.blog-grid', '.blog-grid .blog-card');
 
-  /* ---------- Blog search filter ---------- */
+  /* ---------- Blog search filter (title, category, tags) ---------- */
   var search = $('.blog-search');
   if (search) {
     search.addEventListener('input', function () {
@@ -130,7 +154,10 @@
       $$('.blog-grid .blog-card').forEach(function (card) {
         var t = (card.getAttribute('data-title') || '').toLowerCase();
         var c = (card.getAttribute('data-category') || '').toLowerCase();
-        card.style.display = (!q || t.indexOf(q) > -1 || c.indexOf(q) > -1) ? '' : 'none';
+        var tags = (card.getAttribute('data-tags') || '').toLowerCase();
+        var excerpt = (card.querySelector('.blog-card__excerpt')?.textContent || '').toLowerCase();
+        var match = !q || t.indexOf(q) > -1 || c.indexOf(q) > -1 || tags.indexOf(q) > -1 || excerpt.indexOf(q) > -1;
+        card.style.display = match ? '' : 'none';
       });
       var empty = $('.blog-empty');
       if (empty) {
@@ -139,6 +166,32 @@
       }
     });
   }
+
+  /* ---------- Share buttons (copy link) ---------- */
+  $$('.share-copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var url = btn.getAttribute('data-copy');
+      if (!url) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () {
+          var orig = btn.innerHTML;
+          btn.classList.add('is-copied');
+          btn.innerHTML = '✓ Copied';
+          setTimeout(function () { btn.classList.remove('is-copied'); btn.innerHTML = orig; }, 2000);
+        });
+      } else {
+        // fallback
+        var ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch(e){}
+        document.body.removeChild(ta);
+        btn.classList.add('is-copied');
+        setTimeout(function(){ btn.classList.remove('is-copied'); }, 2000);
+      }
+    });
+  });
 
   /* ---------- Forms (validation + mailto handoff, endpoint-ready) ---------- */
   var FORM_ENDPOINT = null; /* set to e.g. '/api/contact' or Formspree URL when available */
@@ -194,9 +247,39 @@
     });
   });
 
+  /* ---------- Table of Contents active state ---------- */
+  var tocLinks = $$('.post-toc a');
+  var tocHeads = tocLinks.map(function (a) {
+    try { return document.getElementById(a.getAttribute('href').slice(1)); } catch(e){ return null; }
+  }).filter(Boolean);
+  if (tocLinks.length && tocHeads.length && 'IntersectionObserver' in window) {
+    var tocIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          var id = en.target.id;
+          tocLinks.forEach(function (l) {
+            l.classList.toggle('is-active', l.getAttribute('href') === '#' + id);
+          });
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+    tocHeads.forEach(function (h) { tocIO.observe(h); });
+    // smooth scroll for TOC
+    tocLinks.forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var target = document.getElementById(a.getAttribute('href').slice(1));
+        if (target) {
+          window.scrollTo({ top: target.getBoundingClientRect().top + window.pageYOffset - 100, behavior: reduced ? 'auto' : 'smooth' });
+          history.pushState(null, '', a.getAttribute('href'));
+        }
+      });
+    });
+  }
+
   /* ---------- Back to top ---------- */
   var tt = $('.to-top');
-  if (tt) tt.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
+  if (tt) tt.addEventListener('click', function (e) { e.preventDefault(); window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
 
   /* ---------- Year ---------- */
   $$('[data-year]').forEach(function (el) { el.textContent = String(new Date().getFullYear()); });

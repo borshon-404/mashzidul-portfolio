@@ -152,14 +152,10 @@
     }
   ],
   "blog": [
-    {"slug": "why-every-business-needs-a-professional-website", "title": "Why Every Business Needs a Professional Website", "category": "Business"},
-    {"slug": "top-web-design-trends", "title": "Top Web Design Trends", "category": "Web Design"},
-    {"slug": "how-website-speed-affects-seo", "title": "How Website Speed Affects SEO", "category": "SEO & Performance"},
-    {"slug": "wordpress-vs-custom-development", "title": "WordPress vs Custom Development", "category": "Development"},
-    {"slug": "beginners-guide-to-responsive-web-design", "title": "Beginner's Guide to Responsive Web Design", "category": "Web Design"},
-    {"slug": "essential-website-security-tips", "title": "Essential Website Security Tips", "category": "Security"},
-    {"slug": "choosing-the-right-hosting-provider", "title": "Choosing the Right Hosting Provider", "category": "Hosting"},
-    {"slug": "how-good-ux-increases-conversions", "title": "How Good UX Increases Conversions", "category": "UX"}
+    {"slug": "website-speed-optimization", "title": "7 Powerful Ways Website Speed Optimization Can Improve Your Business", "category": "Performance", "excerpt": "Learn 7 powerful ways website speed optimization can improve user experience, SEO, conversions, and overall website performance in 2026.", "publishedDate": "2026-09-17", "featuredImage": "website-speed-optimization"},
+    {"slug": "benefits-of-responsive-web-design", "title": "7 Powerful Benefits of Responsive Web Design for Your Business in 2026", "category": "Web Design", "excerpt": "Discover 7 powerful benefits of responsive web design and learn why a mobile-friendly website is essential for businesses in 2026.", "publishedDate": "2026-09-16", "featuredImage": "benefits-of-responsive-web-design"},
+    {"slug": "wordpress-website-development-is-a-smart-choice", "title": "7 Reasons WordPress Website Development Is a Smart Choice for Your Business", "category": "Development", "excerpt": "Discover 7 powerful reasons why WordPress website development is a smart choice for businesses in 2026, from flexibility and SEO to security and scalability.", "publishedDate": "2026-09-14", "featuredImage": "wordpress-website-development-is-a-smart-choice"},
+    {"slug": "benefits-of-a-professional-business-website", "title": "7 Powerful Benefits of a Professional Business Website in 2026", "category": "Business", "excerpt": "A professional business website is no longer just an online business card. In 2026, it has become one of the most powerful digital tools for building credibility, attracting customers, and growing a business.", "publishedDate": "2026-09-14", "featuredImage": "benefits-of-a-professional-business-website"}
   ],
   "faq": [
     {"q": "What services do you offer?", "a": "I design and develop responsive websites, WordPress websites, landing pages, eCommerce stores, and custom web applications. I also provide website maintenance, bug fixes, and performance optimization."},
