@@ -1,0 +1,8 @@
+# Deny PHP execution in uploads (CRITICAL)
+php_flag engine off
+AddType text/plain php phtml php3 php4 php5 php7 phps
+RemoveHandler .php .phtml
+Options -ExecCGI -Indexes
+<FilesMatch "\.(php|phtml|php3|php4|php5|phps|exe|sh|bat)$">
+    Require all denied
+</FilesMatch>

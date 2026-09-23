@@ -1,15 +1,26 @@
-# Dependencies
-node_modules/
+# Config with secrets
+config/config.php
+app/Config/config.php
+../config.php
+private/config.php
 
-# Logs & OS cruft
-*.log
+# Uploads (keep folder but ignore contents, keep .htaccess)
+uploads/*
+!uploads/.htaccess
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Editor
-.vscode/
-.idea/
+# Logs
+*.log
+error_log
 
-# Python
-__pycache__/
-*.pyc
+# Env
+.env
+
+# Vendor if any in future
+vendor/
+
+# Database
+*.sql.gz

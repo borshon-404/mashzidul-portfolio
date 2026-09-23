@@ -1,0 +1,154 @@
+# =============================================================================
+# MTB Portfolio — Apache .htaccess
+# Milestone 3: Production-oriented, safe for current static site + future PHP
+# Target: cPanel / Apache 2.4+ / PHP 8.2+
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Security: Disable directory listing
+# ---------------------------------------------------------------------------
+Options -Indexes
+
+# ---------------------------------------------------------------------------
+# Protect sensitive files
+# ---------------------------------------------------------------------------
+<FilesMatch "^(config\.php|\.env|\.git|composer\.json|composer\.lock|package\.json|package-lock\.json)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>
+
+# Protect database and migration folders
+RedirectMatch 403 ^/(database|app/Config|config)/.*$
+
+# Protect migration scripts
+<FilesMatch "migrate\.php$">
+    Require all denied
+</FilesMatch>
+
+# ---------------------------------------------------------------------------
+# Protect uploads from PHP execution (CRITICAL for media foundation)
+# ---------------------------------------------------------------------------
+<DirectoryMatch "^.*/uploads/.*">
+    php_flag engine off
+    AddType text/plain php phtml php3 php4 php5 php7 phps
+    RemoveHandler .php .phtml
+    Options -ExecCGI -Indexes
+</DirectoryMatch>
+
+# Alternative for .htaccess inside uploads folder (create uploads/.htaccess too)
+# This is for root .htaccess, but also create uploads/.htaccess separately
+
+# ---------------------------------------------------------------------------
+# Compression and Caching (preserve existing Vercel headers logic)
+# ---------------------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/webp "access plus 7 days"
+    ExpiresByType image/png "access plus 7 days"
+    ExpiresByType image/jpeg "access plus 7 days"
+    ExpiresByType image/svg+xml "access plus 7 days"
+    ExpiresByType text/css "access plus 1 day"
+    ExpiresByType text/javascript "access plus 1 day"
+    ExpiresByType application/javascript "access plus 1 day"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 7 days"
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Security Headers
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    # HSTS only if HTTPS (uncomment when SSL enabled)
+    # Header set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+
+    # Cache control for assets (mimic vercel.json)
+    <FilesMatch "\.(woff2)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=86400"
+    </FilesMatch>
+    <FilesMatch "\.(webp|png|jpg|jpeg|svg|ico)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Clean URLs and Front Controller (Safe for current static site)
+# ---------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Force HTTPS in production (uncomment when SSL ready)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # -----------------------------------------------------------------------
+    # Legacy blog route: /blog/{slug}/ → 301 to /{slug}/ (SEO preservation)
+    # Must be before front controller, but only for existing blog slugs
+    # For M3 foundation, we do generic redirect, final check in PHP will verify slug exists
+    # To avoid redirect loops, ensure clean URL is not /blog/
+    # -----------------------------------------------------------------------
+    RewriteRule ^blog/([a-z0-9-]+)/?$ /$1/ [R=301,L]
+
+    # -----------------------------------------------------------------------
+    # Front Controller: Route non-existing files/dirs to public/index.php or index.php
+    # Safe for current static site because all current URLs exist as dirs with index.html
+    # e.g., /about/ exists as about/index.html → !-d false → no rewrite → serves static
+    # Future dynamic routes (when static HTML removed) will be routed to PHP
+    # -----------------------------------------------------------------------
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    # Exclude assets and uploads from PHP routing
+    RewriteCond %{REQUEST_URI} !^/assets/
+    RewriteCond %{REQUEST_URI} !^/uploads/
+    RewriteCond %{REQUEST_URI} !^/database/
+    RewriteCond %{REQUEST_URI} !^/app/
+    RewriteCond %{REQUEST_URI} !^/config/
+    # Route to front controller (choose one)
+    # For now, public/index.php is future, but root may have index.php later
+    # We check if public/index.php exists, else index.php
+    RewriteRule ^(.*)$ public/index.php?path=$1 [L,QSA]
+
+    # Alternative if public/index.php not used yet, route to index.php at root:
+    # RewriteRule ^(.*)$ index.php?path=$1 [L,QSA]
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Error Documents — preserve visual language, but simple for M3
+# ---------------------------------------------------------------------------
+ErrorDocument 404 /404.html
+# Future dynamic error pages:
+# ErrorDocument 404 /public/index.php?error=404
+# ErrorDocument 403 /public/index.php?error=403
+
+# ---------------------------------------------------------------------------
+# MIME Types for WebP and WOFF2 (cPanel usually has, but ensure)
+# ---------------------------------------------------------------------------
+<IfModule mod_mime.c>
+    AddType image/webp .webp
+    AddType font/woff2 .woff2
+    AddType image/svg+xml .svg
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Prevent access to .git, .env, etc.
+# ---------------------------------------------------------------------------
+RedirectMatch 403 ^/\.git/.*
+RedirectMatch 403 ^/\.env
+
+# ---------------------------------------------------------------------------
+# End of .htaccess
+# ---------------------------------------------------------------------------
